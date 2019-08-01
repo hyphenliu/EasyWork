@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}中移信息网络组网站{% endblock %}</title>
+    <link type="favicon" rel="shortcut icon" href="../../static/img/cmcc_32.ico"/>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../static/font-awesome/css/font-awesome.css" rel="stylesheet">
+    <!-- Morris -->
+    <link href="../../static/css/animate.css" rel="stylesheet">
+    <link href="../../static/css/style.css" rel="stylesheet">
+    {% block head-css %}{% endblock %}
+    {% block head-style %} {% endblock %}
+    {% block head-script %} {% endblock %}
+</head>
+
+<body>
+<div id="wrapper">
+    <nav class="navbar-default navbar-static-side" role="navigation">
+        <div class="sidebar-collapse">
+            <ul class="nav" id="side-menu">
+                <li class="nav-header">
+                    <div class="dropdown profile-element">
+                        <span>
+                            <img alt="image" class="img-circle" src="../../static/img/profile_small.jpg"/>
+                        </span>
+                        <a data-toggle="dropdown" class="dropdown-toggle" href="#">
+                            <span class="clear">
+                                <span class="block m-t-xs">
+                                <strong class="font-bold">{{ user.get_username }}</strong>
+                                </span>
+                            </span>
+                        </a>
+                    </div>
+                </li>
+                {% if user.is_superuser or user.get_username == 'test' %}
+                    <li id="network" class="nav-first-level">
+                        <a href="#">
+                            <i class="fa fa-bar-chart-o"></i>
+                            <span class="nav-label">网络运维</span>
+                            <span class="fa arrow"></span>
+                        </a>
+                        <ul class="nav nav-second-level">
+                            <li><a href="/network/accesslist">网络策略生成</a></li>
+                            <li>
+                                <a href="#">HW行动 <span class="fa arrow"></span></a>
+                                <ul class="nav nav-third-level">
+                                    <li>
+                                        <a href="/network/fengdu">FD/JF信息</a>
+                                    </li>
+                                    <li>
+                                        <a href="/network/paicha">排查信息</a>
+                                    </li>
+                                </ul>
+                            </li>
+                            {% if user.is_superuser %}
+                                <li>
+                                    <a href="/network/iplist">IP地址查询</a>
+                                </li>
+                                <li><a href="/network/devicecheck">设备巡检</a></li>
+                                <li><a href="graph_chartjs.html">Chart.js</a></li>
+                                <li><a href="graph_peity.html">Peity Charts</a></li>
+                                <li><a href="graph_sparkline.html">Sparkline Charts</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li id="dailywork" class="nav-first-level">
+                        <a href="#">
+                            <i class="fa fa-th-large"></i>
+                            <span class="nav-label">日常管理</span>
+                            <span class="fa arrow"></span>
+                        </a>
+                        <ul class="nav nav-second-level">
+                            <li><a href="/dailywork/weekreport/">周报填写</a></li>
+                            <li><a href="/dailywork/taxilist/">交通票据清单</a></li>
+                            <li><a href="/dailywork/cmitcontact/">IT公司通讯录</a></li>
+                            <li><a href="#">Dashboard v.3</a></li>
+                            <li><a href="#">Dashboard v.4</a></li>
+                        </ul>
+                    </li>
+
+                    <li id="budget" class="nav-first-level">
+                        <a href="#">
+                            <i class="fa fa-bar-chart-o"></i>
+                            <span class="nav-label">预算管理</span>
+                            <span class="fa arrow"></span>
+                        </a>
+                        <ul class="nav nav-second-level">
+                            <li><a href="graph_flot.html">Flot Charts</a></li>
+                            <li><a href="graph_morris.html">Morris.js Charts</a></li>
+                            <li><a href="graph_rickshaw.html">Rickshaw Charts</a></li>
+                            <li><a href="graph_chartjs.html">Chart.js</a></li>
+                            <li><a href="graph_peity.html">Peity Charts</a></li>
+                            <li><a href="graph_sparkline.html">Sparkline Charts</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+                {% if user.get_username == 'assets' or user.is_superuser %}
+                    <li id="assets" class="nav-first-level">
+                        <a href="#">
+                            <i class="fa fa-database"></i>
+                            <span class="nav-label">资产管理</span>
+                            <span class="fa arrow"></span>
+                        </a>
+                        <ul class="nav nav-second-level">
+                            <li><a href="/assets/erp/">ERP资产查询</a></li>
+                            <li><a href="/assets/schedual/">盘点清册查询</a></li>
+                            <li><a href="/assets/inventoried/">盘点结果查询</a></li>
+                            <li><a href="/assets/scraped/">已报废资产查询</a></li>
+                            <li><a href="/assets/scrap/">可报废资产查询</a></li>
+                            <li><a href="/assets/prescrap/">预报废资产登记</a></li>
+                            <li><a href="/assets/inventory/">资产盘点</a></li>
+                            <li><a href="/assets/statistic/">资产统计</a></li>
+                            <li><a href="/assets/dataimport/">资产信息导入</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+                <li>
+                    <a href="#" class="nav-first-level">
+                        <i class="fa fa-sitemap"></i>
+                        <span class="nav-label">目录层级 </span>
+                        <span class="fa arrow"></span>
+                    </a>
+                    <ul class="nav nav-second-level">
+                        <li>
+                            <a href="#">Third Level <span class="fa arrow"></span></a>
+                            <ul class="nav nav-third-level">
+                                <li>
+                                    <a href="#">Third Level Item</a>
+                                </li>
+                                <li>
+                                    <a href="#">Third Level Item</a>
+                                </li>
+                                <li>
+                                    <a href="#">Third Level Item</a>
+                                </li>
+
+                            </ul>
+                        </li>
+                        <li><a href="#">Second Level Item</a></li>
+                        <li>
+                            <a href="#">Second Level Item</a></li>
+                        <li>
+                            <a href="#">Second Level Item</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+        </div>
+    </nav>
+
+    <div id="page-wrapper" class="gray-bg">
+        <div class="row border-bottom">
+            <nav class="navbar navbar-static-top white-bg" role="navigation" style="margin-bottom: 0">
+                <div class="navbar-header">
+                    <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i>
+                    </a>
+                    <form role="search" class="navbar-form-custom" method="post" action="search_results.html">
+                        <div class="form-group">
+                            <input type="text" placeholder="搜索" class="form-control"
+                                   name="top-search" id="top-search">
+                        </div>
+                    </form>
+                </div>
+                <ul class="nav navbar-top-links navbar-right">
+                    {% if user.is_authenticated %}
+                        <li>
+                            <span class="m-r-sm text-muted welcome-message">欢迎{{ user.get_username }}</span>
+                        </li>
+                        <li>
+                            <a href="/accounts/logout/">
+                                <i class="fa fa-sign-out"></i> 注销
+                            </a>
+                        </li>
+                    {% else %}
+                        <li><a href="{% url 'login' %}?next={{ request.path }}">登录</a></li>
+                    {% endif %}
+                </ul>
+
+            </nav>
+        </div>
+
+
+        <div class="wrapper wrapper-content">
+            {% block wrapper-content %}{% endblock %}
+
+        </div>
+
+
+        <div class="footer">
+            <div>
+                <strong>Copyright</strong> 中移信息 &copy; 2018-2019
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Mainly scripts -->
+<script src="../../static/js/jquery-2.1.1.js"></script>
+<script src="../../static/js/bootstrap.min.js"></script>
+<script src="../../static/js/plugins/metisMenu/jquery.metisMenu.js"></script>
+<script src="../../static/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+
+<!-- Custom and plugin javascript -->
+<script src="../../static/js/inspinia.js"></script>
+
+<!-- jQuery UI -->
+<script src="../../static/js/plugins/jquery-ui/jquery-ui.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        var nav = document.getElementById("side-menu");
+        var links = nav.getElementsByTagName("li");
+        var liitem = nav.getElementsByTagName("a");
+        var currenturl = '{{ request.path }}';
+        for (var i = 0; i < liitem.length; i++) {
+            var linkurl = liitem[i].getAttribute("href");
+            if (currenturl.indexOf(linkurl) != -1) {
+                var parent = liitem[i].parentElement;
+                parent.setAttribute("class", 'active');
+                parent.parentElement.setAttribute("class", 'nav nav-second-level collapse in');
+                parent.parentElement.parentElement.setAttribute("class", 'active');
+            }
+        }
+    })
+</script>
+{% block tail-scripts %}
+{% endblock %}
+
+</body>
+</html>

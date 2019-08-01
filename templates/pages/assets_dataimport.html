@@ -1,0 +1,209 @@
+{% extends 'snippet/layout.html' %}
+{% block title %} 资产管理 {% endblock %}
+{% block head-css %}
+    <link rel="stylesheet" href="../../static/css/bootstrap-table.css">
+{% endblock %}
+{% block wrapper-content %}
+    <div class="row wrapper border-bottom white-bg page-heading">
+        <div class="col-lg-10">
+            <h2>资产盘点</h2>
+            <ol class="breadcrumb">
+                <li>
+                    <a href="/">首页</a>
+                </li>
+                <li>
+                    <a>资产管理</a>
+                </li>
+                <li class="active">
+                    <strong>资产信息导入</strong>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>基础数据导入</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-lg-6 col-md-6">
+                                <label>上传固定资产明细表&nbsp;&nbsp;
+                                    <a href="/upload/assets/erp?action=import&filename=固定资产明细表">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-upload"></i>&nbsp;&nbsp;
+                                            <span class="bold">上传</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>上传无形资产明细表&nbsp;&nbsp;
+                                    <a href="/upload/assets/erpsoft?action=import&filename=无形资产明细表">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-upload"></i>&nbsp;&nbsp;
+                                            <span class="bold">上传</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>上传盘点清册&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <a href="/upload/assets/schedual?action=import&filename=盘点清册">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-upload"></i>&nbsp;&nbsp;
+                                            <span class="bold">上传</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>上传盘点结果&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <a href="/upload/assets/inventoried?action=import&filename=盘点结果">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-upload"></i>&nbsp;&nbsp;
+                                            <span class="bold">上传</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>上传已报废资产&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <a href="/upload/assets/scraped?action=import&filename=已报废资产">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-upload"></i>&nbsp;&nbsp;
+                                            <span class="bold">上传</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>上传待报废资产&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <a href="/upload/assets/prescrap?action=import&filename=待报废资产">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-upload"></i>&nbsp;&nbsp;
+                                            <span class="bold">上传</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>基础数据导入模版下载</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-lg-6 col-md-6">
+                                <label>下载固定资产明细模版&nbsp;&nbsp;
+                                    <a href="/download/assets/erp?action=download&filename=固定资产明细模版">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-download"></i>&nbsp;&nbsp;
+                                            <span class="bold">下载</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>下载无形资产明细模版&nbsp;&nbsp;
+                                    <a href="/download/assets/erpsoft?action=download&filename=无形资产明细模版">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-download"></i>&nbsp;&nbsp;
+                                            <span class="bold">下载</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>下载盘点清册模版&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <a href="/download/assets/schedual?action=download&filename=盘点清册模版">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-download"></i>&nbsp;&nbsp;
+                                            <span class="bold">下载</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>下载盘点结果模版&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <a href="/download/assets/inventory?action=download&filename=盘点结果模版">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-download"></i>&nbsp;&nbsp;
+                                            <span class="bold">下载</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>下载已报废资产模版&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <a href="/download/assets/scraped?action=download&filename=已报废资产模版">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-download"></i>&nbsp;&nbsp;
+                                            <span class="bold">下载</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                            <div class="col-lg-6 col-md-6">
+                                <label>下载拟报废资产模版&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <a href="/download/assets/prescrap?action=download&filename=拟报废资产模版">
+                                        <button class="btn btn-success " type="button">
+                                            <i class="fa fa-download"></i>&nbsp;&nbsp;
+                                            <span class="bold">下载</span>
+                                        </button>
+                                    </a>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <form class="form-horizontal">
+                                <div class="form-group">
+                                    <label class="col-lg-1 control-label">地理位置</label>
+                                    <div class="col-lg-2 control-label">
+                                        <select class="form-control m-b" name="address">
+                                            <option>--请选择--</option>
+                                            <option>国通41楼</option>
+                                            <option>梅林IDC</option>
+                                            <option>东莞松山湖</option>
+                                            <option>南方基地</option>
+                                        </select>
+                                    </div>
+
+                                    <label class="col-lg-1 control-label">机房</label>
+                                    <div class="col-lg-2 control-label">
+                                        <select class="form-control m-b" name="address">
+                                            <option>--请选择--</option>
+                                            <option>国通41楼</option>
+                                            <option>梅林IDC</option>
+                                            <option>东莞松山湖</option>
+                                            <option>南方基地</option>
+                                        </select>
+                                    </div>
+
+                                    <label class="col-lg-1 control-label">机架列</label>
+                                    <div class="col-lg-2 control-label">
+                                        <input type="text" placeholder="A列" class="form-control">
+                                    </div>
+                                    <label class="col-lg-1 control-label">机架</label>
+                                    <div class="col-lg-2 control-label">
+                                        <input type="text" placeholder="1架" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-1 col-lg-offset-11">
+                                        <button class="btn btn-primary" type="submit">确认</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

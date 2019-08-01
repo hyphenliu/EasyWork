@@ -1,0 +1,610 @@
+{% extends 'snippet/layout.html' %}
+{% block title %}网络资源维护工作简报{% endblock %}
+{% block head-css %}
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../static/font-awesome/css/font-awesome.css" rel="stylesheet">
+
+    <!-- Data Tables -->
+    <link href="../../static/css/plugins/dataTables/dataTables.bootstrap.css" rel="stylesheet">
+    <link href="../../static/css/plugins/dataTables/dataTables.responsive.css" rel="stylesheet">
+    <link href="../../static/css/plugins/dataTables/dataTables.tableTools.min.css" rel="stylesheet">
+
+    <link href="../../static/css/animate.css" rel="stylesheet">
+    <link href="../../static/css/style.css" rel="stylesheet">
+
+{% endblock %}
+{% block head-style %}
+    <style>
+        .userh0 {
+            font-size: 26.0pt;
+            font-family: 楷体;
+            color: red
+        }
+
+        .userh1 {
+            font-size: 18.0pt;
+            line-height: 240%;
+            font-family: 楷体
+        }
+
+        .userh2 {
+            font-size: 14.0pt;
+            font-family: 楷体;
+            color: black
+        }
+
+        .usertip {
+            font-size: 14.0pt;
+            font-family: 楷体;
+            color: black
+        }
+
+        .userbuttongp {
+            float: right;
+        }
+
+        .usersave {
+            background-color: #00ff00;
+            color: #000000;
+            align: center;
+        }
+
+        th {
+            text-align: center;
+            vertical-align: center;
+        }
+
+        .td_center {
+            text-align: center;
+        }
+
+        .usertable {
+            color: blue;
+        }
+    </style>
+{% endblock %}
+{% block wrapper-content %}
+    <div class="row">
+        <div class="col-lg-12">
+            <p align="center"><b><span class="userh0">网络资源维护工作简报</span></b></p>
+            <p><span><img width="100%" height="4" src="../../static/img/weekreport.gif"></span></p>
+            <h3><span class="userh1">一、需求支撑</span></h3>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(1)资源需求</span></h5>
+                </div>
+
+                <div class="ibox-content">
+                    <span class='usertip'>本周资源需求分配情况小结。（包括已完成需求及其完成时间、处理中需求及其预计完成时间等。）</span>
+
+                    <table class="table table-striped table-bordered table-hover " id="resourerequire">
+                        <thead class="usertable">
+                        <tr>
+                            <th rowspan=2>序号</th>
+                            <th rowspan=2>需求部门</th>
+                            <th rowspan=2>业务系统</th>
+                            <th rowspan=2>虚拟机(台)</th>
+                            <th rowspan=2>物理机(台)</th>
+                            <th rowspan=2>交付时间</th>
+                            <th rowspan=2>交付周期(天)</th>
+                            <th rowspan=2>完成情况</th>
+                            <th colspan=3>分配资源</th>
+                            <th rowspan=2>操作</th>
+                        </tr>
+                        <tr>
+                            <th>CPU</th>
+                            <th>内存(GB)</th>
+                            <th>存储(TB)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <td class='td_center'>1</td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td style="text-align:center; " onclick="deletetr(this)">
+                            <button class="btn btn-xs btn-link">删除</button>
+                        </td>
+                        </tbody>
+                        <tfoot class="usertable">
+                        <tr align="center">
+                            <th rowspan=2>序号</th>
+                            <th rowspan=2>需求部门</th>
+                            <th rowspan=2>业务系统</th>
+                            <th rowspan=2>虚拟机(台)</th>
+                            <th rowspan=2>物理机(台)</th>
+                            <th rowspan=2>交付时间</th>
+                            <th rowspan=2>交付周期(天)</th>
+                            <th rowspan=2>完成情况</th>
+                            <th>CPU</th>
+                            <th>内存(GB)</th>
+                            <th>存储(TB)</th>
+                            <th rowspan=2>操作</th>
+                        </tr>
+                        <tr>
+                            <th colspan=3 style="text-align:center;">分配资源</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                    <div class="userbuttongp">
+                        <a onclick="fnClickAddRow('resourerequire',10);" href="javascript:void(0);"
+                           class="btn btn-primary ">新增行</a>
+                        <a onclick="saveTable('resourerequire');" href="javascript:void(0);"
+                           class="btn btn-primary ">保存</a>
+                    </div>
+                </div>
+            </div>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(2)网络配置需求响应</span></h5>
+                </div>
+                <div class="ibox-content">
+
+                    <table class="table table-striped table-bordered table-hover " id="configurationresponse">
+                        <thead class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>需求部门</th>
+                            <th>需求内容</th>
+                            <th>交付时间</th>
+                            <th>交付周期(天)</th>
+                            <th>操作</th>
+                        </tr>
+
+                        </thead>
+                        <tbody>
+                        <td class='td_center'>1</td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td style="text-align:center; " onclick="deletetr(this)">
+                            <button type="button" class="btn btn-xs btn-link">删除</button>
+                        </td>
+                        </tbody>
+                        <tfoot class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>需求部门</th>
+                            <th>需求内容</th>
+                            <th>交付时间</th>
+                            <th>交付周期(天)</th>
+                            <th>操作</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                    <div class="" style="float:right">
+                        <a onclick="fnClickAddRow('configurationresponse',4);" href="javascript:void(0);"
+                           class="btn btn-primary ">新增行</a>
+                        <a onclick="saveTable('configurationresponse');" href="javascript:void(0);"
+                           class="btn btn-primary ">保存</a>
+                    </div>
+                </div>
+            </div>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(3)其他需求响应</span></h5>
+                </div>
+                <div class="ibox-content">
+
+                    <table class="table table-striped table-bordered table-hover " id="otherresponse">
+                        <thead class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>需求部门</th>
+                            <th>需求内容</th>
+                            <th>交付时间</th>
+                            <th>交付周期(天)</th>
+                            <th>操作</th>
+                        </tr>
+
+                        </thead>
+                        <tbody>
+                        <td class='td_center'>1</td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td style="text-align:center; " onclick="deletetr(this)">
+                            <button type="button" class="btn btn-xs btn-link">删除</button>
+                        </td>
+                        </tbody>
+                        <tfoot class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>需求部门</th>
+                            <th>需求内容</th>
+                            <th>交付时间</th>
+                            <th>交付周期(天)</th>
+                            <th>操作</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                    <div class="userbuttongp">
+                        <a onclick="fnClickAddRow('otherresponse',4);" href="javascript:void(0);"
+                           class="btn btn-primary ">新增行</a>
+                        <a onclick="saveTable('otherresponse');" href="javascript:void(0);"
+                           class="btn btn-primary ">保存</a>
+                    </div>
+                </div>
+            </div>
+            <h3><span class="userh1">二、遗留问题</span></h3>
+            <div class="ibox float-e-margins">
+                <div class="ibox-content">
+                    <textarea class="form-control" rows="6" id="historyproblem"></textarea>
+                </div>
+                <a onclick="saveComments('historyproblem');" href="javascript:void(0);"
+                   class="btn btn-primary " style="float:right">保存</a>
+            </div>
+            <h3><span class="userh1">三、能力建设</span></h3>
+            <div class="ibox float-e-margins">
+                <div class="ibox-content">
+                    <textarea class="form-control" rows="6" id="ablityconstruct"></textarea>
+                </div>
+                <a onclick="saveComments('ablityconstruct');" href="javascript:void(0);"
+                   class="btn btn-primary " style="float:right">保存</a>
+            </div>
+            <h3><span class="userh1">四、日常运维</span></h3>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(1)安全加固</span></h5>
+                </div>
+                <div class="ibox-content">
+                    <textarea class="form-control" rows="6" id="safereinforce"></textarea>
+                </div>
+                <a onclick="saveComments('safereinforce');" href="javascript:void(0);"
+                   class="btn btn-primary " style="float:right">保存</a>
+            </div>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(2)升级优化</span></h5>
+                </div>
+                <div class="ibox-content">
+                    <textarea class="form-control" rows="6" id="optimizeupdate"></textarea>
+                </div>
+                <a onclick="saveComments('optimizeupdate');" href="javascript:void(0);"
+                   class="btn btn-primary " style="float:right">保存</a>
+            </div>
+            <h3><span class="userh1">五、故障响应</span></h3>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(1)硬件故障</span></h5>
+                </div>
+                <div class="ibox-content">
+                    <span class="usertip">本周处理硬件故障xx件</span>
+
+                    <table class="table table-striped table-bordered table-hover " id="hardwarefailure">
+                        <thead class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>设备类型</th>
+                            <th>故障原因</th>
+                            <th>故障数量</th>
+                            <th>设备厂商</th>
+                            <th>是否影响业务</th>
+                            <th>涉及系统</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <td class='td_center'>1</td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'>（处理状态）</td>
+                        <td style="text-align:center; " onclick="deletetr(this)">
+                            <button type="button" class="btn btn-xs btn-link">删除</button>
+                        </td>
+                        </tbody>
+                        <tfoot class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>设备类型</th>
+                            <th>故障原因</th>
+                            <th>故障数量</th>
+                            <th>设备厂商</th>
+                            <th>是否影响业务</th>
+                            <th>涉及系统</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                    <div class="userbuttongp">
+                        <a onclick="fnClickAddRow('hardwarefailure',7);" href="javascript:void(0);"
+                           class="btn btn-primary ">新增行</a>
+                        <a onclick="saveTable('hardwarefailure');" href="javascript:void(0);" class="btn btn-primary ">保存</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(2)网络故障</span></h5>
+                </div>
+                <div class="ibox-content">
+
+                    <table class="table table-striped table-bordered table-hover " id="networkfailure">
+                        <thead class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>设备类型</th>
+                            <th>故障原因</th>
+                            <th>故障数量</th>
+                            <th>设备厂商</th>
+                            <th>是否影响业务</th>
+                            <th>涉及系统</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <td class='td_center'>1</td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'>（告警情况）</td>
+                        <td style="text-align:center; " onclick="deletetr(this)">
+                            <button type="button" class="btn btn-xs btn-link">删除</button>
+                        </td>
+                        </tbody>
+                        <tfoot class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>设备类型</th>
+                            <th>故障原因</th>
+                            <th>故障数量</th>
+                            <th>设备厂商</th>
+                            <th>是否影响业务</th>
+                            <th>涉及系统</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                    <div class="userbuttongp">
+                        <a onclick="fnClickAddRow('networkfailure',7);" href="javascript:void(0);"
+                           class="btn btn-primary ">新增行</a>
+                        <a onclick="saveTable('networkfailure');" href="javascript:void(0);"
+                           class="btn btn-primary ">保存</a>
+                    </div>
+                </div>
+            </div>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(3)业务报障响应</span></h5>
+                </div>
+                <div class="ibox-content">
+                    <table class="table table-striped table-bordered table-hover " id="businessfailure">
+                        <thead class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>涉及平台</th>
+                            <th>涉及业务系统</th>
+                            <th>故障描述情况</th>
+                            <th>故障分析处理</th>
+                            <th>是否解决</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+
+                        </thead>
+                        <tbody>
+                        <td class='td_center'>1</td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td onclick='tdclick(this)'></td>
+                        <td style="text-align:center; " onclick="deletetr(this)">
+                            <button type="button" class="btn btn-xs btn-link">删除</button>
+                        </td>
+                        </tbody>
+                        <tfoot class="usertable">
+                        <tr>
+                            <th>序号</th>
+                            <th>涉及平台</th>
+                            <th>涉及业务系统</th>
+                            <th>故障描述情况</th>
+                            <th>故障分析处理</th>
+                            <th>是否解决</th>
+                            <th>备注</th>
+                            <th>操作</th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                    <div class="userbuttongp">
+                        <a onclick="fnClickAddRow('businessfailure',6);" href="javascript:void(0);"
+                           class="btn btn-primary ">新增行</a>
+                        <a onclick="saveTable('businessfailure');" href="javascript:void(0);" class="btn btn-primary ">保存</a>
+                    </div>
+                </div>
+            </div>
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5><span class="userh2">(4)其他故障</span></h5>
+                </div>
+                <div class="ibox-content">
+                    <textarea class="form-control" rows="6" id="otherfailures"></textarea>
+                </div>
+                <a onclick="saveComments('otherfailures');" href="javascript:void(0);"
+                   class="btn btn-primary " style="float:right">保存</a>
+            </div>
+            <h3><span class="userh1">六、下周工作计划</span></h3>
+            <div class="ibox float-e-margins">
+                <div class="ibox-content">
+                    <textarea class="form-control" rows="6" id="networkplan"></textarea>
+                </div>
+                <div class="">
+                    <a onclick="saveComments('networkplan');" href="javascript:void(0);"
+                       class="btn btn-primary " style="float:right">保存</a>
+                </div>
+            </div>
+            <button onclick="submitall();" href="javascript:void(0);"
+                    class="btn usersave ">提交周报
+            </button>
+        </div>
+    </div>
+
+{% endblock %}
+{% block tail-scripts %}
+    <script src="../../static/js/jquery-2.1.1.js"></script>
+    <script src="../../static/js/bootstrap.min.js"></script>
+    <script src="../../static/js/plugins/metisMenu/jquery.metisMenu.js"></script>
+    <script src="../../static/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+    <script src="../../static/js/plugins/jeditable/jquery.jeditable.js"></script>
+
+    <!-- Data Tables -->
+    <script src="../../static/js/plugins/dataTables/jquery.dataTables.js"></script>
+    <script src="../../static/js/plugins/dataTables/dataTables.bootstrap.js"></script>
+    <script src="../../static/js/plugins/dataTables/dataTables.responsive.js"></script>
+    <script src="../../static/js/plugins/dataTables/dataTables.tableTools.min.js"></script>
+
+    <!-- Custom and plugin javascript -->
+    <script src="../../static/js/inspinia.js"></script>
+    <script src="../../static/js/plugins/pace/pace.min.js"></script>
+    <script>
+        function submitall() {
+
+        }
+
+        function saveComments(commentname) {
+            var comment = $('#' + commentname).val();
+            alert(comment);
+        }
+
+        function saveTable(idname) {
+            var tableinfo = gettableinfo(idname);
+            alert(tableinfo);
+        }
+
+        //get table infomation
+        function gettableinfo(idname) {
+            var key = "";
+            var value = "";
+            var tabledata = "";
+            var reduce = 1;
+            var table = $("#" + idname);
+            var tbody = table.children();
+            var trs = tbody.children();
+            if (idname == 'resourerequire') {
+                reduce = 2;
+            }
+            for (var i = reduce; i < trs.length - reduce; i++) {
+                var tds = trs.eq(i).children();
+                for (var j = 0; j < tds.length - 1; j++) {
+                    if (j == 0) {
+                        if (tds.eq(j).text() == null || tds.eq(j).text() == "") {
+                            return null;
+                        }
+                        key = "key\":\"" + tds.eq(j).text();
+                    }
+                    if (j == 1) {
+                        if (tds.eq(j).text() == null || tds.eq(j).text() == "") {
+                            return null;
+                        }
+                        value = "value\":\"" + tds.eq(j).text();
+                    }
+                    else {
+                        value = value + ' ' + tds.eq(j).text();
+                    }
+                }
+                if (i == trs.length - reduce) {
+                    tabledata += "{\"" + key + "\",\"" + value + "\"}";
+                } else {
+                    tabledata += "{\"" + key + "\",\"" + value + "\"},";
+                }
+            }
+            tabledata = "[" + tabledata + "]";
+            return tabledata;
+        }
+
+        function tdclick(tdobject) {
+            var td = $(tdobject);
+            td.attr("onclick", "");
+            //1,取出当前td中的文本内容保存起来
+            var text = td.text();
+            //2,清空td里面的内容
+            td.html(""); //也可以用td.empty();
+            //3，建立一个文本框，也就是input的元素节点
+            var input = $("<input>");
+            //4，设置文本框的值是保存起来的文本内容
+            input.attr("value", text);
+            input.bind("blur", function () {
+                var inputnode = $(this);
+                var inputtext = inputnode.val();
+                var tdNode = inputnode.parent();
+                tdNode.html(inputtext);
+                tdNode.click(tdclick);
+                td.attr("onclick", "tdclick(this)");
+            });
+            input.keyup(function (event) {
+                var myEvent = event || window.event;
+                var kcode = myEvent.keyCode;
+                if (kcode == 13) {
+                    var inputnode = $(this);
+                    var inputtext = inputnode.val();
+                    var tdNode = inputnode.parent();
+                    tdNode.html(inputtext);
+                    tdNode.click(tdclick);
+                }
+            });
+
+            //5，将文本框加入到td中
+            td.append(input);
+            var t = input.val();
+            input.val("").focus().val(t);
+//              input.focus();
+
+            //6,清除点击事件
+            td.unbind("click");
+        }
+
+        function fnClickAddRow(idname, number) {
+            var table = $('#' + idname);
+            var htmltxt = "";
+            var reduce = 1;
+            if (idname == 'resourerequire') {
+                reduce = 3;
+            }
+            var index = $('#' + idname + ' tr').length - reduce;
+            for (var i = 0; i < number; i++) {
+                htmltxt += "<td onclick='tdclick(this)'>" + " </td>";
+            }
+            var tr = $("<tr>" +
+                "<td class='td_center'>" + index + "</td>" + htmltxt +
+                "<td  align='center' onclick='deletetr(this)'>" +
+                "<button type='button'  class='btn btn-xs btn-link' >删除</button></td></tr>");
+            table.append(tr);
+        }
+
+        function deletetr(tdobject) {
+            var td = $(tdobject);
+            var idname = td.parents("table")[0]["id"];
+            td.parents("tr").remove();
+            numCheck(idname);
+        }
+
+        function numCheck(idname) {
+            var num = $("#" + idname + " tr").length;     //获取tr的长度
+            for (var i = 0; i <= num; i++) {         //进行循环
+                $("#" + idname + " tr .td_center").eq(i).html(i + 1);
+            }
+        }
+    </script>
+{% endblock %}

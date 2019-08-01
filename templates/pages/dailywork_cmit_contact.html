@@ -1,0 +1,208 @@
+{% extends 'snippet/layout.html' %}
+{% block title %}IT公司通讯录{% endblock %}
+{% block head-css %}
+    <link rel="stylesheet" href="../../static/css/bootstrap-table.css">
+{% endblock %}
+{% block head-style %}
+
+{% endblock %}
+{% block wrapper-content %}
+    <div class="row wrapper border-bottom white-bg page-heading">
+        <div class="col-lg-10">
+            <h2>IT公司通讯录</h2>
+            <ol class="breadcrumb">
+                <li>
+                    <a href="/">首页</a>
+                </li>
+                <li>
+                    <a>日常工作</a>
+                </li>
+                <li class="active">
+                    <strong>通讯录</strong>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>通讯录查询</h5>
+                    </div>
+                    <div id="toolbar" class="btn-group">
+                        <table>
+                            <td>
+                                <div style="float:right;">
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="columnName1" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="department">部门</option>
+                                            <option value="name">姓名</option>
+                                            <option value="duty">职务</option>
+                                            <option value="email">邮箱</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="columnValue1" id="columnValue1"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <button class="btn btn-primary " id="querybutton">查询</button>&nbsp;
+                                        <a href="/exportexcel/dailywork/contact">
+                                            <button class="btn btn-primary " id="exportbutton">导出</button>
+                                        </a>
+                                    </div>
+
+                                </div>
+                            </td>
+                        </table>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="contacttable" class="table table-hover">
+
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>更新通讯录(非必要不要更新)</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal" method="post" action="/dailywork/cmitcontact" id="contactform">
+                            <div class="form-group">
+                                <label class="control-label col-md-3">OA帐号：</label>
+                                <div class="col-md-9">
+                                    <input class="form-control" name="oauser" placeholder="OA帐号" id="oauser"
+                                           type="text">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-md-3">OA密码：</label>
+                                <div class="col-md-9">
+                                    <input class="form-control" name="oapasswd" placeholder="OA登录密码" id="oapasswd"
+                                           type="password">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-md-2 col-md-offset-4">
+                                    <input type="button" class="btn btn-success btn-md" value="更新公司通讯录" id="getcontact">
+
+                                </div>
+                                <a href="/exportquery/dailywork/contact" id="downloadcontact" hidden>
+                                    <button class="btn btn-success" type="button">
+                                        <i class="fa fa-download"></i>&nbsp;&nbsp;
+                                        <span class="bold">下载通讯录</span>
+                                    </button>
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block tail-scripts %}
+    <script src="../../static/js/bootstrap-table.js"></script>
+    <script>
+        $("#getcontact").click(function () {
+            $.ajax({
+                url: "/dailywork/cmitcontact_ajax/",
+                type: "GET",
+                data: {
+                    "oauser": $("#oauser").val(),
+                    "oapasswd": $("#oapasswd").val(),
+                    "csrfmiddlewaretoken": $('[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function (data) {
+                    $("#downloadcontact").show();
+                }
+            })
+        });
+        $(function () {
+
+            //1.初始化Table
+            var oTable = new TableInit();
+            oTable.Init();
+
+            //2.初始化Button的点击事件
+            var oButtonInit = new ButtonInit();
+            oButtonInit.Init();
+
+        });
+        var TableInit = function () {
+            var oTableInit = new Object();
+            oTableInit.Init = function () {
+                $('#contacttable').bootstrapTable({
+                    url: "/dailywork/listpage/contact/",//请求路径
+                    method: 'get',                      //请求方式（*）
+                    toolbar: '#toolbar',                //工具按钮用哪个容器
+                    striped: true,                      //是否显示行间隔色
+                    cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+                    pagination: true,                   //是否显示分页（*）
+                    sortable: false,                     //是否启用排序
+                    sortOrder: "asc",                   //排序方式
+                    queryParams: oTableInit.queryParams,//传递参数（*）
+                    sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
+                    pageNumber: 1,                       //初始化加载第一页，默认第一页
+                    pageSize: 10,                       //每页的记录行数（*）
+                    pageList: [10, 25, 50, 100],        //可供选择的每页的行数（*）
+                    //search: true,                       //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+                    strictSearch: true,
+                    showColumns: true,                  //是否显示所有的列
+                    showRefresh: true,                  //是否显示刷新按钮
+                    minimumCountColumns: 2,             //最少允许的列数
+                    clickToSelect: true,                //是否启用点击选中行
+                    //height: 600,                        //行高，如果没有设置height属性，表格自动根据记录条数觉得表格高度
+                    uniqueId: "ID",                     //每一行的唯一标识，一般为主键列
+                    showToggle: true,                    //是否显示详细视图和列表视图的切换按钮
+                    cardView: false,                    //是否显示详细视图
+                    detailView: false,                   //是否显示父子表
+                    columns: [
+                        {% for t,f in titles %}
+                            {
+                                title: '{{ t }}',
+                                field: '{{ f }}',
+                                sortable: true
+                            },
+                        {% endfor %}
+                    ]
+                })
+            };
+            oTableInit.queryParams = function (params) {
+                var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
+                    limit: params.limit,   //页面大小
+                    offset: params.offset,  //页码
+                    columnname1: $("#columnName1 option:selected").val(),
+                    columnvalue1: $("#columnValue1").val(),
+                };
+                return temp;
+            };
+            return oTableInit;
+        };
+        var ButtonInit = function () {
+            var oInit = new Object();
+            var postdata = {};
+
+            oInit.Init = function () {
+                //初始化页面上面的按钮事件
+            };
+
+            return oInit;
+        };
+        $(document).on('click', "#querybutton", function () {
+            $('#contacttable').bootstrapTable('refresh');
+        });
+
+        $(document).keyup(function (e) {//捕获文档对象的按键弹起事件
+            if (e.keyCode == 13) {//按键信息对象以参数的形式传递进来了
+                //此处编写用户敲回车后的代码
+                $('#querybutton').click();
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends 'snippet/layout.html' %}
+{% block title %} 资产管理 {% endblock %}
+{% block head-css %}
+    <link rel="stylesheet" href="../../static/css/bootstrap-table.css">
+{% endblock %}
+{% block wrapper-content %}
+    <div class="row wrapper border-bottom white-bg page-heading">
+        <div class="col-lg-10">
+            <h2>资产盘点</h2>
+            <ol class="breadcrumb">
+                <li>
+                    <a href="/">首页</a>
+                </li>
+                <li>
+                    <a>资产管理</a>
+                </li>
+                <li class="active">
+                    <strong>资产盘点</strong>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>已盘点情况</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <label class="control-label col-lg-2">国通41楼：{{ guotongInventoried }}/{{ guotongInventory }}</label>
+                            <label class="control-label col-lg-2">梅林IDC：{{ guotongInventoried }}/{{ guotongInventory }}</label>
+                            <label class="control-label col-lg-2">东莞松山湖：{{ guotongInventoried }}/{{ guotongInventory }}</label>
+                            <label class="control-label col-lg-2">南方基地：{{ guotongInventoried }}/{{ guotongInventory }}</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>盘点输入</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <label class="control-label">机房选择：</label>
+                        <select class="control-label" id="addressSelect">
+                            <option>--请选择--</option>
+                            <option value="国通41楼 A区新发展机房">国通41楼 A区新发展机房</option>
+                            <option value="国通41楼 B区主机房">国通41楼 B区主机房</option>
+                            <option value="国通41楼 C区MIS机房">国通41楼 C区MIS机房</option>
+                            <option value="国通41楼 D区国漫机房">国通41楼 D区国漫机房</option>
+                            <option value="国通 楼层网络机房">国通 楼层网络机房</option>
+                            <option value="梅林IDC C区机房">梅林IDC C区机房</option>
+                            <option value="梅林IDC D区机房">梅林IDC D区机房</option>
+                            <option value="梅林IDC VIP1机房">梅林IDC VIP1机房</option>
+                            <option value="梅林IDC VIP2机房">梅林IDC VIP2机房</option>
+                            <option value="东莞松山湖 1FA机房">东莞松山湖 1FA机房</option>
+                            <option value="东莞松山湖 3FA机房">东莞松山湖 3FA机房</option>
+                            <option value="东莞松山湖 3FA机房">东莞松山湖 3FA机房</option>
+                            <option value="南方基地 402机房">南方基地 402机房</option>
+                        </select>&nbsp;&nbsp;&nbsp;
+                        <label class="control-label">机架号：</label>
+                        <input type="text" placeholder="C15-17/HM-01" name="racketNumber" id="racketNumber"/>&nbsp;&nbsp;&nbsp;
+                        <label class="control-label">扫描标签：</label>
+                        <input type="text" class="" name="columnValue" id="labelValue"/>&nbsp;&nbsp; &nbsp;
+                        <button class="btn btn-primary " id="querylabel">查询</button>
+                    </div>
+                </div>
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>当前扫描资产信息</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form id="haveResult" style="display:none;">
+                            {% csrf_token %}
+                            <div class="row">
+                                <label class="control-label col-lg-2">标&nbsp;签&nbsp;号： </label>
+                                <span class="col-lg-4" id="asset_label"></span>
+                                <label class="control-label col-lg-2">资产类型： </label>
+                                <span class="col-lg-4" id="asset_name"></span>
+                            </div>
+                            <div class="row">
+                                <label class="control-label col-lg-2">位&nbsp;&nbsp;&nbsp;&nbsp;置： </label>
+                                <span class="col-lg-4" id="address"></span>
+                                <label class="control-label col-lg-2">启用日期： </label>
+                                <span class="col-lg-4" id="use_date"></span>
+                            </div>
+                            <div class="row">
+                                <label class="control-label col-lg-2">责&nbsp;任&nbsp;人： </label>
+                                <span class="col-lg-4" id="staff_name"></span>
+                                <label class="control-label col-lg-2">工&nbsp;&nbsp;&nbsp;&nbsp;号： </label>
+                                <span class="col-lg-4" id="staff_code"></span>
+                            </div>
+                            <div class="row">
+                                <label class="control-label col-lg-2">使用年限： </label>
+                                <span class="col-lg-4" id="limit_year"></span>
+                                <label class="control-label col-lg-2">剩余月数： </label>
+                                <span class="col-lg-4" id="remainder_month"></span>
+                            </div>
+                            <div class="row">
+                                <label class="control-label col-lg-2">项目编号： </label>
+                                <span class="col-lg-4" id="project_id"></span>
+                                <label class="control-label col-lg-2">项目名称： </label>
+                                <span class="col-lg-4" id="project_name"></span>
+                            </div>
+                            <div class="row">
+                                <label class="control-label col-lg-2">资产型号：</label>
+                                <input class="col-lg-3" type="text" name="assetModel" id="asset_model" value=""/>
+                                <label class="control-label col-lg-2 col-lg-offset-1">制&nbsp;造&nbsp;商：</label>
+                                <input class="col-lg-3" type="text" name="assetManufactor" id="asset_manufactor"
+                                       value=""/>
+                            </div>
+                            <br/>
+                            <div class="row">
+                                <a type="button" class="btn btn-primary col-lg-2 col-lg-offset-5" id="modify">确认修改</a>
+                            </div>
+                        </form>
+                        <div id="noResult" style="display:none;">
+                            <p style="color:red"><span id="noResultContent"></span></p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block tail-scripts %}
+    <script>
+        $(document).on('click', '#querylabel', function () {
+            $.ajax({
+                url: "/assets/inventoring/",
+                type: "GET",
+                data: {
+                    "asset_label": $('#labelValue').val(),
+                    "address": $('#addressSelect').val() + $('#racketNumber').val(),
+                    "csrfmiddlewaretoken": $('[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function (data) {
+                    var item = JSON.parse(data);
+                    var address = $('#addressSelect').val() + $('#racketNumber').val();
+                    if (item["asset_label"]) {
+                        $('#haveResult').show();
+                        $('#noResult').hide();
+                    }
+                    else {
+                        $('#haveResult').hide();
+                        $('#noResult').show();
+                        $('#noResultContent').text('【' + $('#labelValue').val() + '】没有在盘点清册中')
+                        alert('该资产不在盘点清册中');
+                    }
+                    $('#asset_label').text(item["asset_label"]);
+                    $('#asset_name').text(item["asset_name"]);
+                    $('#address').text(address);
+                    $('#use_date').text(item["use_date"]);
+                    $('#staff_name').text(item["staff_name"]);
+                    $('#staff_code').text(item["staff_code"]);
+                    $('#limit_year').text(item["limit_year"]);
+                    $('#remainder_month').text(item["remainder_month"]);
+                    $('#project_id').text(item["project_id"]);
+                    $('#project_name').text(item["project_name"]);
+                    $('#asset_model').val(item["asset_model"]);
+                    $('#asset_manufactor').val(item["asset_manufactor"]);
+                }
+            })
+        });
+        $(document).keyup(function (e) {
+            if (e.keyCode == 13) {
+                $('#querylabel').click();
+            }
+        });
+        $(document).on('click', '#modify', function () {
+            $.ajax({
+                url: "/assets/inventoring/",
+                type: "POST",
+                data: {
+                    "asset_label": $('#asset_label').text(),
+                    "address": $('#address').text(),
+                    "asset_model": $('#asset_model').val(),
+                    "asset_manufactor": $('#asset_manufactor').val(),
+                    "csrfmiddlewaretoken": $('[name="csrfmiddlewaretoken"]').val()
+                },
+                sucess: function () {
+                    alert('更新成功');
+                }
+            })
+        })
+    </script>
+{% endblock %}

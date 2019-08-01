@@ -1,0 +1,193 @@
+{% extends 'snippet/layout.html' %}
+{% block title %}交通票据清单{% endblock %}
+{% block head-css %}
+    <link rel="stylesheet" href="../../static/css/bootstrap-datepicker3.min.css">
+{% endblock %}
+{% block head-style %}
+
+{% endblock %}
+{% block wrapper-content %}
+    <div class="row wrapper border-bottom white-bg page-heading">
+        <div class="col-lg-10">
+            <h2>交通票据清单</h2>
+            <ol class="breadcrumb">
+                <li>
+                    <a href="/">首页</a>
+                </li>
+                <li>
+                    <a>日常工作</a>
+                </li>
+                <li class="active">
+                    <strong>票据清单</strong>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>票据清单</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal" method="post" action="/dailywork/taxi/" id="taxiform">
+                            <div class="form-group">
+                                <label class="control-label col-md-2">选择月份：</label>
+                                <div class="col-md-4">
+                                    <div class='input-group date' id='datepicker'>
+                                        <input type='text' id="selectedMonth" class="form-control " value=""/>
+                                        <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                    </div>
+                                </div>
+                                <label class="control-label col-md-2">修改时间：</label>
+                                <div class="col-md-4">
+                                    <div class='input-group date' id='datepicker1'>
+                                        <input type='text' class="form-control " value="" id="selectedDate"/>
+                                        <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!--
+                            <div class="form-group">
+                                <label class="control-label col-md-2">组长人数：</label>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="teamLeaderNumber" value="3"/>
+                                </div>
+                                <label class="control-label col-md-2">组长额度：</label>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="teamLeaderLimit" value="1800"/>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-md-2">组员人数：</label>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="teamerNumber" value="30"/>
+                                </div>
+                                <label class="control-label col-md-2">组员额度：</label>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="teamerLimit" value="1200"/>
+                                </div>
+                            </div>
+                            -->
+                            <div class="form-group">
+                                <label class="control-label col-md-2">输入单张额度：</label>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="itemLimit" value="200"/>
+                                </div>
+                                <label class="control-label col-md-2">总额度：</label>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="totalLimit"/>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-md-2 col-md-offset-2">
+                                    <input type="button" class="btn btn-success btn-md" value="获取清单" id="getList">
+                                </div>
+                                <a href="/exportexcel/dailywork/taxi" id="downloadList" hidden>
+                                    <button class="btn btn-success" type="button">
+                                        <i class="fa fa-download"></i>&nbsp;&nbsp;
+                                        <span class="bold">下载清单</span>
+                                    </button>
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>结果</h5>
+                    </div>
+                    <div class="ibox-content" id="result">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block tail-scripts %}
+    <script src="../../static/js/bootstrap-datepicker.js"></script>
+    <script src="../../static/js/bootstrap-datepicker.zh-CN.min.js"></script>
+    <script>
+        var daylist = '';
+        $('#datepicker').datepicker({//选择月份
+            multidate: true,
+            multidateSeparator: ',',
+            format: 'yyyymm',
+            startView: 1,
+            maxViewMode: 1,
+            minViewMode: 1,
+            autoclose: true,
+            clearBtn: true,
+            weekStart: 0,
+            language: 'zh-CN'
+        }).on('changeMonth', function (e) {// 生成选择好的工作日列表
+            var year = e.date.getFullYear();
+            var month = e.date.getMonth();
+            var days = new Date(year, month + 1, 0);
+            var dayNumber = days.getDate();
+            for (i = 1; i <= dayNumber; i++) {
+                day = new Date(year, month, i);
+                if (day.getDay() == 0 || day.getDay() == 6) continue;
+                dayStr = year + '-' + PrefixInteger(month + 1, 2) + '-' + PrefixInteger(i, 2);
+                daylist = daylist ? daylist + ',' + dayStr : dayStr;
+            }
+            $("#selectedDate").val(daylist);
+        }).on('clearDate', function (e) {
+            $("#selectedDate").val("");
+            daylist = '';
+        });
+        $('#datepicker1').datepicker({//修改工作日（调休日）
+            multidate: true,
+            multidateSeparator: ',',
+            format: 'yyyy-mm-dd',
+            minView: 'month',
+            maxView: 'year',
+            autoclose: false,
+            clearBtn: true,
+            todayHighlight: true,
+            weekStart: 0,
+            language: 'zh-CN'
+        });
+        $("#getList").click(function () {
+            $.ajax({
+                url: '/dailywork/taxi_ajax/taxi/',
+                type: 'GET',
+                data: {
+                    'selectedMonth': $("#selectedMonth").val(),
+                    'itemLimit': $("#itemLimit").val(),
+                    'totalLimit': $("#totalLimit").val(),
+                    'daylist': $("#selectedDate").val()
+                },
+                success: function (data) {
+                    var dataObj = JSON.parse(data);
+                    $("#result").html(dataObj['errors']);
+                    if (!dataObj['errors']) {
+                        $("#downloadList").attr('hidden', false);
+                        $("#result").html(dataObj['success']);
+                    }
+                },
+                error: function (data) {
+                    var dataObj = JSON.parse(data);
+                    alert(dataObj['errors'])
+                    $("#result").html(dataObj['errors']);
+                }
+            })
+        });
+
+        function PrefixInteger(num, length) {
+            return (Array(length).join('0') + num).slice(-length);
+        }
+
+    </script>
+{% endblock %}

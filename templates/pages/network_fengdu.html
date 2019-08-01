@@ -1,0 +1,488 @@
+{% extends 'snippet/layout.html' %}
+{% load basefilter %}
+{% block title %}FD/JF信息动态更新{% endblock %}
+{% block head-css %}
+    <link rel="stylesheet" href="../../static/css/bootstrap-table.css">
+{% endblock %}
+{% block wrapper-content %}
+    <div class="row wrapper border-bottom white-bg page-heading">
+        <div class="col-lg-10">
+            <h2>HW行动</h2>
+            <ol class="breadcrumb">
+                <li>
+                    <a href="/">首页</a>
+                </li>
+                <li>
+                    <a>网络运维</a>
+                </li>
+                <li class="active">
+                    <strong>FD/JF信息</strong>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>大群-FD数据更新及查询</h5>
+                    </div>
+                    <div id="fdtoolbar" class="btn-group">
+                        <table>
+                            <td>
+                                <div style="float:right;">
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="fdcolumnName1" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="serial_number">编号</option>
+                                            <option value="number_time">编号时间</option>
+                                            <option value="resource">需求来源</option>
+                                            <option value="ip_list">处置IP地址</option>
+                                            <option value="reason">处置原因</option>
+                                            <option value="excutor">处置者</option>
+                                            <option value="outcome">处置结果</option>
+                                            <option value="outcome_time">处置时间</option>
+                                            <option value="note">备注</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="fdcolumnValue1"
+                                               id="fdcolumnValue1"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="fdcolumnName2" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="serial_number">编号</option>
+                                            <option value="number_time">编号时间</option>
+                                            <option value="resource">需求来源</option>
+                                            <option value="ip_list">处置IP地址</option>
+                                            <option value="reason">处置原因</option>
+                                            <option value="excutor">处置者</option>
+                                            <option value="outcome">处置结果</option>
+                                            <option value="outcome_time">处置时间</option>
+                                            <option value="note">备注</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="fdcolumnValue2"
+                                               id="fdcolumnValue2"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <button class="btn btn-primary " id="fdquerybutton">查询</button>&nbsp;
+                                        <a href="/exportexcel/network/fengdu">
+                                            <button class="btn btn-primary " id="fdexportbutton">导出</button>
+                                        </a>
+                                    </div>
+
+                                </div>
+                            </td>
+                        </table>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="fengdutable" class="table table-hover">
+
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>大群-JF数据更新及查询</h5>
+                    </div>
+                    <div id="jftoolbar" class="btn-group">
+                        <table>
+                            <td>
+                                <div style="float:right;">
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="jfcolumnName1" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="serial_number">编号</option>
+                                            <option value="resource">需求来源</option>
+                                            <option value="income_time">需求时间</option>
+                                            <option value="ip_list">解封IP地址</option>
+                                            <option value="excutor">解封者</option>
+                                            <option value="outcome">解封结果</option>
+                                            <option value="outcome_time">解封时间</option>
+                                            <option value="note">备注</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="jfcolumnValue1"
+                                               id="jfcolumnValue1"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="jfcolumnName2" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="serial_number">编号</option>
+                                            <option value="resource">需求来源</option>
+                                            <option value="income_time">需求时间</option>
+                                            <option value="ip_list">解封IP地址</option>
+                                            <option value="excutor">解封者</option>
+                                            <option value="outcome">解封结果</option>
+                                            <option value="outcome_time">解封时间</option>
+                                            <option value="note">备注</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="jfcolumnValue2"
+                                               id="jfcolumnValue2"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <button class="btn btn-primary " id="jfquerybutton">查询</button>&nbsp;
+                                        <a href="/exportexcel/network/jiefeng">
+                                            <button class="btn btn-primary " id="jfexportbutton">导出</button>
+                                        </a>
+                                    </div>
+
+                                </div>
+                            </td>
+                        </table>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="jiefengtable" class="table table-hover">
+
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>基础平台深圳-FD数据更新及查询</h5>
+                    </div>
+                    <div id="szfdtoolbar" class="btn-group">
+                        <table>
+                            <td>
+                                <div style="float:right;">
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="szfdcolumnName1" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="serial_number">编号</option>
+                                            <option value="resource">封堵者</option>
+                                            <option value="income_time">封堵时间</option>
+                                            <option value="outcome">封堵结果</option>
+                                            <option value="note">备注</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="szfdcolumnValue1"
+                                               id="szfdcolumnValue1"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="szfdcolumnName2" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="serial_number">编号</option>
+                                            <option value="resource">封堵者</option>
+                                            <option value="income_time">封堵时间</option>
+                                            <option value="outcome">封堵结果</option>
+                                            <option value="note">备注</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="szfdcolumnValue2"
+                                               id="szfdcolumnValue2"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <button class="btn btn-primary " id="szfdquerybutton">查询</button>&nbsp;
+                                        <a href="/exportexcel/network/jichufd">
+                                            <button class="btn btn-primary " id="szfdexportbutton">导出</button>
+                                        </a>
+                                    </div>
+
+                                </div>
+                            </td>
+                        </table>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="jichufdtable" class="table table-hover">
+
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>基础平台深圳-JF数据更新及查询</h5>
+                    </div>
+                    <div id="szjftoolbar" class="btn-group">
+                        <table>
+                            <td>
+                                <div style="float:right;">
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="szjfcolumnName1" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="serial_number">编号</option>
+                                            <option value="resource">解封者</option>
+                                            <option value="income_time">解封时间</option>
+                                            <option value="outcome">解封结果</option>
+                                            <option value="note">备注</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="szjfcolumnValue1"
+                                               id="szjfcolumnValue1"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="szjfcolumnName2" style="height: 25px;">
+                                            <option value="">--请选择--</option>
+                                            <option value="serial_number">编号</option>
+                                            <option value="resource">解封者</option>
+                                            <option value="income_time">解封时间</option>
+                                            <option value="outcome">解封结果</option>
+                                            <option value="note">备注</option>
+                                        </select>
+                                        <input type="text" style="height: 25px;" name="szjfcolumnValue2"
+                                               id="szjfcolumnValue2"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <button class="btn btn-primary " id="szjfquerybutton">查询</button>&nbsp;
+                                        <a href="/exportexcel/network/jichujf">
+                                            <button class="btn btn-primary " id="szjfexportbutton">导出</button>
+                                        </a>
+                                    </div>
+
+                                </div>
+                            </td>
+                        </table>
+                    </div>
+                    <div class="ibox-content">
+                        <table id="jichujftable" class="table table-hover">
+
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+
+{% block tail-scripts %}
+    <script src="../../static/js/bootstrap-table.js"></script>
+    <script>
+        {% comment %}setInterval(function () {
+            $('#fdquerybutton').click();
+        }, 60*1000);
+        setInterval(function () {
+            $('#jfquerybutton').click();
+        }, 1.9*60*1000);
+        setInterval(function () {
+            $('#szfdquerybutton').click();
+        }, 1.3*60*1000);
+        setInterval(function () {
+            $('#szjfquerybutton').click();
+        }, 2.1*60*1000);{% endcomment %}
+
+        $(function () {
+
+            //1.初始化Table
+            var oTable = new TableInit();
+            oTable.Init();
+
+            //2.初始化Button的点击事件
+            var oButtonInit = new ButtonInit();
+            oButtonInit.Init();
+
+        });
+        var TableInit = function () {
+            var oTableInit = new Object();
+            oTableInit.Init = function () {
+                $('#fengdutable').bootstrapTable({
+                    url: "/network/listpage/fengdu/",//请求路径
+                    method: 'get',                      //请求方式（*）
+                    toolbar: '#fdtoolbar',                //工具按钮用哪个容器
+                    striped: true,                      //是否显示行间隔色
+                    cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+                    pagination: true,                   //是否显示分页（*）
+                    sortable: false,                     //是否启用排序
+                    sortOrder: "asc",                   //排序方式
+                    queryParams: oTableInit.queryParams,//传递参数（*）
+                    sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
+                    pageNumber: 1,                       //初始化加载第一页，默认第一页
+                    pageSize: 5,                       //每页的记录行数（*）
+                    pageList: [5, 10, 25, 50, 100],        //可供选择的每页的行数（*）
+                    //search: true,                       //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+                    strictSearch: true,
+                    showColumns: true,                  //是否显示所有的列
+                    showRefresh: true,                  //是否显示刷新按钮
+                    minimumCountColumns: 2,             //最少允许的列数
+                    clickToSelect: true,                //是否启用点击选中行
+                    //height: 600,                        //行高，如果没有设置height属性，表格自动根据记录条数觉得表格高度
+                    uniqueId: "ID",                     //每一行的唯一标识，一般为主键列
+                    showToggle: true,                    //是否显示详细视图和列表视图的切换按钮
+                    cardView: false,                    //是否显示详细视图
+                    detailView: false,                   //是否显示父子表
+                    columns: [
+                        {% for t,f in fdtitles %}
+                            {
+                                title: '{{ t }}',
+                                field: '{{ f }}',
+                                sortable: true
+                            },
+                        {% endfor %}
+                    ]
+                });
+                $('#jiefengtable').bootstrapTable({
+                    url: "/network/listpage/jiefeng/",//请求路径
+                    method: 'get',                      //请求方式（*）
+                    toolbar: '#jftoolbar',                //工具按钮用哪个容器
+                    striped: true,                      //是否显示行间隔色
+                    cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+                    pagination: true,                   //是否显示分页（*）
+                    sortable: false,                     //是否启用排序
+                    sortOrder: "asc",                   //排序方式
+                    queryParams: oTableInit.queryParams,//传递参数（*）
+                    sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
+                    pageNumber: 1,                       //初始化加载第一页，默认第一页
+                    pageSize: 5,                       //每页的记录行数（*）
+                    pageList: [5, 10, 25, 50, 100],        //可供选择的每页的行数（*）
+                    //search: true,                       //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+                    strictSearch: true,
+                    showColumns: true,                  //是否显示所有的列
+                    showRefresh: true,                  //是否显示刷新按钮
+                    minimumCountColumns: 2,             //最少允许的列数
+                    clickToSelect: true,                //是否启用点击选中行
+                    //height: 600,                        //行高，如果没有设置height属性，表格自动根据记录条数觉得表格高度
+                    uniqueId: "ID",                     //每一行的唯一标识，一般为主键列
+                    showToggle: true,                    //是否显示详细视图和列表视图的切换按钮
+                    cardView: false,                    //是否显示详细视图
+                    detailView: false,                   //是否显示父子表
+                    columns: [
+                        {% for t,f in jftitles %}
+                            {
+                                title: '{{ t }}',
+                                field: '{{ f }}',
+                                sortable: true
+                            },
+                        {% endfor %}
+                    ]
+                });
+                $('#jichufdtable').bootstrapTable({
+                    url: "/network/listpage/jichufd/",//请求路径
+                    method: 'get',                      //请求方式（*）
+                    toolbar: '#szfdtoolbar',                //工具按钮用哪个容器
+                    striped: true,                      //是否显示行间隔色
+                    cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+                    pagination: true,                   //是否显示分页（*）
+                    sortable: false,                     //是否启用排序
+                    sortOrder: "asc",                   //排序方式
+                    queryParams: oTableInit.queryParams,//传递参数（*）
+                    sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
+                    pageNumber: 1,                       //初始化加载第一页，默认第一页
+                    pageSize: 5,                       //每页的记录行数（*）
+                    pageList: [5, 10, 25, 50, 100],        //可供选择的每页的行数（*）
+                    //search: true,                       //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+                    strictSearch: true,
+                    showColumns: true,                  //是否显示所有的列
+                    showRefresh: true,                  //是否显示刷新按钮
+                    minimumCountColumns: 2,             //最少允许的列数
+                    clickToSelect: true,                //是否启用点击选中行
+                    //height: 600,                        //行高，如果没有设置height属性，表格自动根据记录条数觉得表格高度
+                    uniqueId: "ID",                     //每一行的唯一标识，一般为主键列
+                    showToggle: true,                    //是否显示详细视图和列表视图的切换按钮
+                    cardView: false,                    //是否显示详细视图
+                    detailView: false,                   //是否显示父子表
+                    columns: [
+                        {% for t,f in szfdtitles %}
+                            {
+                                title: '{{ t }}',
+                                field: '{{ f }}',
+                                sortable: true
+                            },
+                        {% endfor %}
+                    ]
+                });
+                $('#jichujftable').bootstrapTable({
+                    url: "/network/listpage/jichujf/",//请求路径
+                    method: 'get',                      //请求方式（*）
+                    toolbar: '#szjftoolbar',                //工具按钮用哪个容器
+                    striped: true,                      //是否显示行间隔色
+                    cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+                    pagination: true,                   //是否显示分页（*）
+                    sortable: false,                     //是否启用排序
+                    sortOrder: "asc",                   //排序方式
+                    queryParams: oTableInit.queryParams,//传递参数（*）
+                    sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
+                    pageNumber: 1,                       //初始化加载第一页，默认第一页
+                    pageSize: 5,                       //每页的记录行数（*）
+                    pageList: [5, 10, 25, 50, 100],        //可供选择的每页的行数（*）
+                    //search: true,                       //是否显示表格搜索，此搜索是客户端搜索，不会进服务端，所以，个人感觉意义不大
+                    strictSearch: true,
+                    showColumns: true,                  //是否显示所有的列
+                    showRefresh: true,                  //是否显示刷新按钮
+                    minimumCountColumns: 2,             //最少允许的列数
+                    clickToSelect: true,                //是否启用点击选中行
+                    //height: 600,                        //行高，如果没有设置height属性，表格自动根据记录条数觉得表格高度
+                    uniqueId: "ID",                     //每一行的唯一标识，一般为主键列
+                    showToggle: true,                    //是否显示详细视图和列表视图的切换按钮
+                    cardView: false,                    //是否显示详细视图
+                    detailView: false,                   //是否显示父子表
+                    columns: [
+                        {% for t,f in szjftitles %}
+                            {
+                                title: '{{ t }}',
+                                field: '{{ f }}',
+                                sortable: true
+                            },
+                        {% endfor %}
+                    ]
+                });
+
+            };
+            oTableInit.queryParams = function (params) {
+                var temp = {   //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
+                    limit: params.limit,   //页面大小
+                    offset: params.offset,  //页码
+                    fdcolumnname1: $("#fdcolumnName1 option:selected").val(),
+                    fdcolumnvalue1: $("#fdcolumnValue1").val(),
+                    fdcolumnname2: $("#fdcolumnName2 option:selected").val(),
+                    fdcolumnvalue2: $("#fdcolumnValue2").val(),
+                    jfcolumnname1: $("#jfcolumnName1 option:selected").val(),
+                    jfcolumnvalue1: $("#jfcolumnValue1").val(),
+                    jfcolumnname2: $("#jfcolumnName2 option:selected").val(),
+                    jfcolumnvalue2: $("#jfcolumnValue2").val(),
+                    szfdcolumnname1: $("#szfdcolumnName1 option:selected").val(),
+                    szfdcolumnvalue1: $("#szfdcolumnValue1").val(),
+                    szfdcolumnname2: $("#szfdcolumnName2 option:selected").val(),
+                    szfdcolumnvalue2: $("#szfdcolumnValue2").val(),
+                    szjfcolumnname1: $("#szjfcolumnName1 option:selected").val(),
+                    szjfcolumnvalue1: $("#szjfcolumnValue1").val(),
+                    szjfcolumnname2: $("#szjfcolumnName2 option:selected").val(),
+                    szjfcolumnvalue2: $("#szjfcolumnValue2").val()
+                };
+                return temp;
+            };
+            return oTableInit;
+        };
+        var ButtonInit = function () {
+            var oInit = new Object();
+            var postdata = {};
+
+            oInit.Init = function () {
+                //初始化页面上面的按钮事件
+            };
+
+            return oInit;
+        };
+        $(document).on('click', "#fdquerybutton", function () {
+            $('#fengdutable').bootstrapTable('refresh');
+        });
+        $(document).on('click', "#jfquerybutton", function () {
+            $('#jiefengtable').bootstrapTable('refresh');
+        });
+        $(document).on('click', "#szfdquerybutton", function () {
+            $('#jichufdtable').bootstrapTable('refresh');
+        });
+        $(document).on('click', "#szjfquerybutton", function () {
+            $('#jichujftable').bootstrapTable('refresh');
+        });
+
+        $(document).keyup(function (e) {//捕获文档对象的按键弹起事件
+            if (e.keyCode == 13) {//按键信息对象以参数的形式传递进来了
+                //此处编写用户敲回车后的代码
+                $('#fdquerybutton').click();
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends 'snippet/layout.html' %}
+{% load basefilter %}
+{% block title %}主要设备巡检{% endblock %}
+{% block head-css %}
+    <link rel="stylesheet" href="../../static/css/bootstrap-table.css">
+{% endblock %}
+{% block wrapper-content %}
+    <div class="row wrapper border-bottom white-bg page-heading">
+        <div class="col-lg-10">
+            <h2>主要设备巡检</h2>
+            <ol class="breadcrumb">
+                <li>
+                    <a href="/">首页</a>
+                </li>
+                <li>
+                    <a>网络运维</a>
+                </li>
+                <li class="active">
+                    <strong>主要设备巡检</strong>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>自动巡检信息填写</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="form-group">
+                            <label class="control-label col-lg-3">检查人：</label>
+                            <div class="col-lg-9">
+                                <input class="form-control" style="height: 25px;" type="text" id="inspector"
+                                       required="required"/>
+                                <span class="help-block m-b-none" id="inspectorError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-lg-3">复核人：</label>
+                            <div class="col-lg-9">
+                                <input class="form-control" style="height: 25px;" type="text" id="checker" required/>
+                                <span class="help-block m-b-none" id="checkerError" style="color:red"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label col-lg-3">发件人(邮箱地址)：</label>
+                            <div class="col-lg-9">
+                                <input class="form-control" style="height: 25px;" type="text" id="sender" required/>
+                                <span class="help-block m-b-none" id="senderError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-lg-3">邮箱密码：</label>
+                            <div class="col-lg-9">
+                                <input class="form-control" style="height: 25px;" type="password" id="mailpasswd"
+                                       required/>
+                                <span class="help-block m-b-none" id="mailpasswdError" style="color:red"></span>
+                            </div>
+                        </div>
+{#                        <div class="form-group">#}
+{#                            <label class="control-label col-lg-3">Cipher：</label>#}
+{#                            <div class="col-lg-9">#}
+{#                                <input class="form-control" style="height: 25px;" type="password" id="cipher" required/>#}
+{#                                <span class="help-block m-b-none" id="cipherError" style="color:red"></span>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="form-group">#}
+{#                            <label class="control-label col-lg-3">收件人(邮箱地址英文逗号";"分开)：</label>#}
+{#                            <div class="col-lg-9">#}
+{#                                <textarea class="form-control" rows="3" id="recevier" required></textarea>#}
+{#                                <span class="help-block m-b-none" id="recevierError" style="color:red"></span>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="form-group">#}
+{#                            <label class="control-label col-lg-3">抄送(邮箱地址英文";"分开)：</label>#}
+{#                            <div class="col-lg-9">#}
+{#                                <textarea class="form-control" rows="2" id="cc" required></textarea>#}
+{#                                <span class="help-block m-b-none" id="ccError" style="color:red"></span>#}
+{#                            </div>#}
+{#                        </div>#}
+                        <div class="form-group">
+                            <label class="control-label col-lg-3">邮箱签名：</label>
+                            <div class="col-lg-9">
+                                <textarea class="form-control" rows="6" id="bodymessage"></textarea>
+                                <span class="help-block m-b-none" id="bodymessageError" style="color:red"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="col-lg-offset-4 ">
+                                <input class="btn btn-info" value="添加" id="submit"/>
+                                <input class="btn btn-warning" value="取消" id="cancel" disabled/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>巡检结果</h5>
+                    </div>
+                    <div class="ibox-content" id="result">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+
+{% block tail-scripts %}
+    <script src="../../static/js/bootstrap-table.js"></script>
+    <script>
+        $("#cancel").click(function () {
+            $("#inspector").attr("disabled", false);
+            $("#checker").attr("disabled", false);
+            $("#sender").attr("disabled", false);
+            $("#mailpasswd").attr("disabled", false);
+            {#$("#cipher").attr("disabled", false);#}
+            {#$("#recevier").attr("disabled", false);#}
+            {#$("#cc").attr("disabled", false);#}
+            $("#bodymessage").attr("disabled", false);
+            $("#cancel").attr('disabled',true);
+            $("#submit").attr('disabled',false);
+        });
+        $("#submit").click(function () {
+            $("#result").val("")
+
+            $.ajax({
+                url: "/network/devicecheck_ajax",
+                type: "GET",
+                data: {
+                    "inspector": $("#inspector").val(),
+                    "checker": $("#checker").val(),
+                    "sender": $("#sender").val(),
+                    "mailpasswd": $("#mailpasswd").val(),
+                    {#"cipher": $("#cipher").val(),#}
+                    {#"recevier": $("#recevier").val(),#}
+                    {#"cc": $("#cc").val(),#}
+                    "bodymessage": $("#bodymessage").val(),
+                },
+                success: function (data) {
+                    var dataObj = JSON.parse(data);
+                    if (dataObj['errors']) {
+                        $("#result").html(dataObj['errors']);
+                    } else {
+                        $('#result').html('<p>插入成功</p>');
+                        $("#inspector").attr("disabled", true);
+                        $("#checker").attr("disabled", true);
+                        $("#sender").attr("disabled", true);
+                        $("#mailpasswd").attr("disabled", true);
+                        {#$("#cipher").attr("disabled", true);#}
+                        {#$("#recevier").attr("disabled", true);#}
+                        {#$("#cc").attr("disabled", true);#}
+                        $("#bodymessage").attr("disabled", true);
+                        $("#cancel").attr('disabled',false);
+                        $("#submit").attr('disabled',true);
+                    }
+                },
+                error: function (data) {
+                    var dataObj = JSON.parse(data);
+                    alert(dataObj['errors'])
+                    $("#result").html(dataObj['errors'])
+                }
+            })
+        })
+    </script>
+{% endblock %}
