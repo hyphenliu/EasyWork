@@ -77,11 +77,13 @@
                             <div class="form-group">
                                 <label class="control-label col-md-2">输入单张额度：</label>
                                 <div class="col-md-4">
-                                    <input type="text" class="form-control" id="itemLimit" value="200" oninput = "value=value.replace(/[^\d]/g,'')"/>
+                                    <input type="text" class="form-control" id="itemLimit" value="200"
+                                           oninput="value=value.replace(/[^\d]/g,'')"/>
                                 </div>
                                 <label class="control-label col-md-2">总额度：</label>
                                 <div class="col-md-4">
-                                    <input type="text" class="form-control" id="totalLimit" oninput = "value=value.replace(/[^\d]/g,'')""/>
+                                    <input type="text" class="form-control" id="totalLimit"
+                                           oninput="value=value.replace(/[^\d]/g,'')""/>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -187,7 +189,8 @@
 
         function PrefixInteger(num, length) {
             return (Array(length).join('0') + num).slice(-length);
-        };
+        }
+
         $(document).keyup(function (e) {//捕获文档对象的按键弹起事件
             if (e.keyCode == 13) {//按键信息对象以参数的形式传递进来了
                 //此处编写用户敲回车后的代码
