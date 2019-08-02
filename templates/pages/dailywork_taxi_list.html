@@ -77,11 +77,11 @@
                             <div class="form-group">
                                 <label class="control-label col-md-2">输入单张额度：</label>
                                 <div class="col-md-4">
-                                    <input type="text" class="form-control" id="itemLimit" value="200"/>
+                                    <input type="text" class="form-control" id="itemLimit" value="200" oninput = "value=value.replace(/[^\d]/g,'')"/>
                                 </div>
                                 <label class="control-label col-md-2">总额度：</label>
                                 <div class="col-md-4">
-                                    <input type="text" class="form-control" id="totalLimit"/>
+                                    <input type="text" class="form-control" id="totalLimit" oninput = "value=value.replace(/[^\d]/g,'')""/>
                                 </div>
                             </div>
                             <div class="form-group">

@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.views import generic
 from django.http import StreamingHttpResponse
 from django.utils.http import urlquote  # 导出中文文件名
+from EasyWork.utils.file_operator import *
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 import time

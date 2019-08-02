@@ -1,5 +1,4 @@
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core.paginator import Paginator
@@ -9,9 +8,8 @@ import json
 
 from networkops.utils.accesslist import *
 from networkops.utils.views_utils import *
-from EasyWork.json_datetime import DatetimeEncoder
-from EasyWork.utils import export2Xls
-from networkops.utils.devicecheck import *
+from EasyWork.utils.json_datetime import DatetimeEncoder
+from EasyWork.utils.file_operator import export2Xls
 
 
 def accesslist(request):

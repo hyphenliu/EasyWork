@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+'''
+@File  : file_operator.py
+@Author: HP.Liew
+@Date  : 2019/8/1 15:52
+@Desc  : 
+'''
 from django.core.cache import cache
 from io import BytesIO
 import os, xlwt
@@ -154,4 +162,3 @@ def export2Xls(module, data, tablename, db=True):
     else:
         pass
     return result
-

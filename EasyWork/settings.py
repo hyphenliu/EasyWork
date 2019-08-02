@@ -14,7 +14,7 @@ import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SQLITE3_DIR=os.path.join(BASE_DIR,"..","sharezone","data","db.sqlite3")
+SQLITE3_DIR = os.path.join(BASE_DIR, "..", "sharezone", "data", "db.sqlite3")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -55,7 +55,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'EasyWork.urls'
-APSCHEDULER_DATETIME_FORMAT =  "N j, Y, f:s a"  # Default
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"  # Default
 
 TEMPLATES = [
     {
@@ -96,7 +96,6 @@ CACHES = {
     },
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
@@ -135,9 +134,9 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
-UPLOAD_DIRS = os.path.join(BASE_DIR, "static", "upload")
-DOWNLOAD_DIRS = os.path.join(BASE_DIR, "static", "download")
-TEST_DIRS = os.path.join(BASE_DIR,"..","sharezone")
+TEST_DIRS = os.path.join(BASE_DIR, "..", "sharezone")
+UPLOAD_DIRS = os.path.join(TEST_DIRS, "data", "upload")
+DOWNLOAD_DIRS = os.path.join(TEST_DIRS, "data", "download")
 
 LOGIN_REDIRECT_URL = '/'
-#LOGIN_URL = '/accounts/login/'
+# LOGIN_URL = '/accounts/login/'

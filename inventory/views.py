@@ -1,12 +1,10 @@
 from django.shortcuts import render, HttpResponse
-from django.core.paginator import Paginator, Page
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.cache import cache
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
 import json
 
-from EasyWork.json_datetime import DatetimeEncoder
-from EasyWork.utils import export2Xls
+from EasyWork.utils.json_datetime import DatetimeEncoder
+from EasyWork.utils.file_operator import export2Xls
 from inventory.utils.views_utils import *
 from inventory.utils.data_struct import *
 

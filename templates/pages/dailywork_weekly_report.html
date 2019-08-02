@@ -70,8 +70,14 @@
             <p><span><img width="100%" height="4" src="../../static/img/weekreport.gif"></span></p>
             <h3><span class="userh1">一、需求支撑</span></h3>
             <div class="ibox float-e-margins">
-                <div class="ibox-title">
+                <div class="ibox-title"  style="height: 60px;">
                     <h5><span class="userh2">(1)资源需求</span></h5>
+                    <label style="float:right">
+                        <input onclick="fnClickAddRow('resourerequire',10);" href="javascript:void(0);"
+                           class="btn btn-primary btn-sm" value="新增行"/>
+                        <input onclick="saveTable('resourerequire');" href="javascript:void(0);"
+                           class="btn btn-primary  btn-sm" value="保存"/>
+                    </label>
                 </div>
 
                 <div class="ibox-content">
@@ -133,12 +139,7 @@
                         </tr>
                         </tfoot>
                     </table>
-                    <div class="userbuttongp">
-                        <a onclick="fnClickAddRow('resourerequire',10);" href="javascript:void(0);"
-                           class="btn btn-primary ">新增行</a>
-                        <a onclick="saveTable('resourerequire');" href="javascript:void(0);"
-                           class="btn btn-primary ">保存</a>
-                    </div>
+
                 </div>
             </div>
             <div class="ibox float-e-margins">
@@ -180,7 +181,7 @@
                         </tr>
                         </tfoot>
                     </table>
-                    <div class="" style="float:right">
+                    <div class="" style="float:right; height: 65px;"  >
                         <a onclick="fnClickAddRow('configurationresponse',4);" href="javascript:void(0);"
                            class="btn btn-primary ">新增行</a>
                         <a onclick="saveTable('configurationresponse');" href="javascript:void(0);"

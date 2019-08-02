@@ -104,23 +104,19 @@ def genLimit(per_limit, number=6):
     num = 0
     sum = 0
     limit_list = []
-    min = per_limit - 10
-    max = per_limit + 10
+    min = int(per_limit * 0.95)
+    max = int(per_limit * 1.05)
     while num < number - 1:
-        body = randint(min, max)
-        tail = randint(0, 1) * 0.5
-        if tail:
-            limit_list.append(str(body + tail))
-        else:
-            limit_list.append(str(body) + '.0')
+        price = randint(min, max) + randint(0, 1) * 0.5
+        limit_list.append(price)
         num += 1
-        sum += body + tail
+        sum += price
     # 为确保每个人的额度大于输入额度，最后一行进行调整
     last = int(per_limit * number - sum)
     final = randint(last, last + 2) + randint(0, 1) * 0.5
     if final > max or final < min:  # 不符合要求则重新生成
         return genLimit(per_limit, number)
     else:
-        limit_list.append(str(final))
+        limit_list.append(final)
 
     return limit_list
