@@ -2,6 +2,7 @@ from dailywork.utils.database_ops import *
 from django.core.cache import cache
 from random import randint
 import math
+from datetime import datetime
 
 
 def simpleQuery(request, tablename):
@@ -71,6 +72,7 @@ def genDate(day_list, number=6):
     while num < number:
         date_str = day_list[randint(0, len(day_list) - 1)]
         if date_str not in date_list:
+            date_str = datetime.strptime(date_str, '%Y-%m-%d')
             date_list.append(date_str)
             num += 1
     return sorted(date_list)

@@ -4,7 +4,7 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 import json
 # Create your views here.
-from EasyWork.utils.logger import logger
+# from EasyWork.utils.logger import logger
 from dailywork.utils.contact_information import OA
 from dailywork.utils.views_utils import *
 from EasyWork.utils.json_datetime import DatetimeEncoder

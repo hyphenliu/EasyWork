@@ -11,6 +11,14 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import platform
+
+if 'windows' in (platform.platform()).lower():
+    op_system = 'Windows'
+elif 'Linux' in (platform.platform()).lower():
+    op_system = 'Linux'
+else:
+    op_system = 'Unsupport'
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +33,7 @@ SECRET_KEY = '$^9p^ksz5y1erz6wcs(ugtj*03td&b1vr=#if(-6txg7vpkv(^'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.209.80', '127.0.0.1']
+ALLOWED_HOSTS = ['192.168.209.80', '192.168.137.43', '127.0.0.1']
 # ALLOWED_HOSTS = ['127.0.0.1']
 
 # Application definition
@@ -138,5 +146,9 @@ TEST_DIRS = os.path.join(BASE_DIR, "..", "sharezone")
 UPLOAD_DIRS = os.path.join(TEST_DIRS, "data", "upload")
 DOWNLOAD_DIRS = os.path.join(TEST_DIRS, "data", "download")
 
+if op_system == 'Windows':
+    CHROME_DRIVER = os.path.join(TEST_DIRS, 'bin', 'chromedriver.exe')
+elif op_system == 'Linux':
+    CHROME_DRIVER = os.path.join(TEST_DIRS, 'bin', 'chromedriver')
 LOGIN_REDIRECT_URL = '/'
 # LOGIN_URL = '/accounts/login/'

@@ -64,8 +64,7 @@ class CheckDevice:
         options = webdriver.ChromeOptions()
         options.add_argument('--ignore-certificate-errors')
         options.add_argument('--headless')
-        self.browser = webdriver.Chrome(executable_path=os.path.join(settings.TEST_DIRS, 'bin', 'chromedriver.exe'),
-                                        chrome_options=options)
+        self.browser = webdriver.Chrome(executable_path=settings.CHROME_DRIVER, chrome_options=options)
         self.browser.implicitly_wait(20)
         self.data = {
             'pa': {'ip': ['192.168.99.245', '192.168.99.246'], 'keywords': 'predefined-top-attackers-table',
@@ -154,10 +153,13 @@ class CheckDevice:
         :return: 返回是否压缩成功
         '''
         print('[INFO] Compress cipher zip file')
-        compressCMD = 'Bandizip.exe a -y  -p:%s %s %s' % (self.passwd[3], self.zipFile, self.reportFileName)
+        if settings.op_system == 'Windows':
+            compress_cmd = 'Bandizip.exe a -y  -p:%s %s %s' % (self.passwd[3], self.zipFile, self.reportFileName)
+        else:
+            compress_cmd = 'zip -rP:%s %s %s' % (self.passwd[3], self.zipFile, self.reportFileName)
         time.sleep(random.randint(10, 15))
         try:
-            os.system(compressCMD)
+            os.system(compress_cmd)
             print('[INFO] Compress zip %s success!' % self.zipFile)
             return True
         except Exception as e:
