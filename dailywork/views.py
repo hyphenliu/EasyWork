@@ -7,6 +7,7 @@ import json
 # from EasyWork.utils.logger import logger
 from dailywork.utils.contact_information import OA
 from dailywork.utils.views_utils import *
+from dailywork.utils.data_struct import *
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
 
@@ -45,6 +46,18 @@ def taxi_ajax(request, tablename):
         cache.set('export{}2XlsContent'.format(tablename), data_list, 60)
         cache.set('export{}2XlsName'.format(tablename), tablename + '-' + month, 60)
         return HttpResponse(json.dumps({'success': '成功生成 %s 条数据，详见下载附件' % len(data_list)}))
+
+def sox(request):
+    tableTitle = zip(htmlTitles['sox'], htmlColums['sox'])
+    batchQueryStatus = cache.get('batchQuery{}Status'.format('sox'))
+
+    return render(request, 'pages/dailywork_sox_list.html',
+                      {'titles': tableTitle, 'querysuccess': batchQueryStatus})
+
+def sox_ajax(request):
+    if request.is_ajax:
+        col1 = request.GET.get('col1')
+        col2 = request.GET.get('col2')
 
 @login_required
 def cmitcontact(request):
@@ -101,3 +114,4 @@ def listpage(request, tablename):
         dataSets.append(d)
 
     return HttpResponse(json.dumps({'total': total, 'rows': dataSets}, cls=DatetimeEncoder))
+

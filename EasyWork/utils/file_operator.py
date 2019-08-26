@@ -9,7 +9,7 @@
 from django.core.cache import cache
 from io import BytesIO
 import os, xlwt
-from datetime import  datetime
+from datetime import datetime
 
 from inventory.utils.data_struct import tableClass as InventModelClass
 from inventory.utils.data_struct import htmlTitles as InventHmtlTitles
@@ -27,15 +27,18 @@ from dailywork.utils.data_struct import htmlColums as DailyworkHtmlColumns
 from dailywork.utils.data_struct import tableTitles as DailyworkTableTitles
 from dailywork.utils.data_struct import tableColums as DailyworkTableColumns
 
-from inventory.utils.database_ops import *
+from inventory.utils import database_ops as asset_dbops
+from dailywork.utils import database_ops as daily_dbops
+from dailywork.utils import SOX
 
 MODULE_DICT = {
     'assets': {'model_class': InventModelClass, 'html_titles': InventHmtlTitles, 'html_columns': InventHtmlColumns,
                'table_titles': InventTableTitles, 'table_columns': InventTableColumns},
     'network': {'model_class': NetworkModelClass, 'html_titles': NetworkHtmlTitles, 'html_columns': NetworkHtmlColumns,
                 'table_titles': NetworkTableTitles, 'table_columns': NetworkTableColumns},
-    'dailywork': {'model_class': DailyworkModelClass, 'html_titles': DailyworkHtmlTitles, 'html_columns': DailyworkHtmlColumns,
-                'table_titles': DailyworkTableTitles, 'table_columns': DailyworkTableColumns}
+    'dailywork': {'model_class': DailyworkModelClass, 'html_titles': DailyworkHtmlTitles,
+                  'html_columns': DailyworkHtmlColumns,
+                  'table_titles': DailyworkTableTitles, 'table_columns': DailyworkTableColumns}
 }
 
 
@@ -48,6 +51,83 @@ def readFile(filename, chunkSize=512):
                 yield c
             else:
                 break
+
+
+def dealErpImportFile(filePath, tableName, fileName, tableTitles):
+    '''
+    处理ERP导入的数据
+    :param filePath:
+    :param tableName:
+    :param fileName:
+    :return:
+    '''
+    if tableName == 'erpsoft':
+        tableName = 'erp'
+        dropTable = False
+    try:
+        titleList = tableTitles[tableName]
+    except:
+        return
+    if tableName == 'inventoried':
+        titleList = tableTitles['inventory']
+    fileData = asset_dbops.readXlsContent(filePath, titleList, fileName)
+    os.remove(filePath)
+    if not fileData:
+        print('没有读取到excel表格数据，请确认是按照模版填写数据')
+        return
+    if tableName == 'erp' or tableName == 'erpsoft':
+        fileData = asset_dbops.completeErpInformation(fileData)
+    elif tableName == 'inventoried':
+        fileData = asset_dbops.complteInventoriedInformation(fileData)
+    elif tableName == 'schedual':
+        fileData = asset_dbops.comleteSchedualInformation(fileData)
+    return asset_dbops.importDatabase(tableName, fileData, dropTable=dropTable)
+
+
+def dealDailyworkImportFile(filePath, tableName, fileName):
+    '''
+    处理导入的日常工作数据，联系人/SOX矩阵
+    :param filePath:
+    :param tableName:
+    :param fileName:
+    :return:
+    '''
+    if tableName == 'sox':
+        # {'origin':[[],...],'matrix':{{},...}}
+        fileData = SOX.getXlsContent(filePath, department='基础平台')
+        return daily_dbops.importDatabase(tableName, fileData)
+
+
+def dealErpQueryFile(filePath, tableName, htmlColums):
+    '''
+    处理ERP批量查询文件
+    :param filePath:
+    :param tableName:
+    :param fileName:
+    :param htmlColums:
+    :return:
+    '''
+    result = []
+    queryList = asset_dbops.readXlsQueryContent(filePath)
+    if not queryList:
+        print('没有读取到excel表格数据，请确认是按照模版填写数据')
+        cache.set('batchQueryStatus', '', 60)
+        return False
+    columns = htmlColums[tableName]
+    for ql in queryList:  # 逐条查询
+        items = asset_dbops.getSingleData(tableName, 'asset_label', ql)
+        if items:
+            for item in items.values():
+                line = []
+                for i in columns:
+                    line.append(item[i])
+                line[0] = ql
+                result.append(line)
+        else:
+            line = [' ' for i in range(len(columns) - 1)]
+            line.insert(0, ql)
+            result.append(line)
+    return result
 
 
 def dealUploadFile(module, filePath, tableName, action, fileName):
@@ -63,48 +143,16 @@ def dealUploadFile(module, filePath, tableName, action, fileName):
     tableTitles = MODULE_DICT[module]['table_titles']
     htmlColums = MODULE_DICT[module]['html_columns']
     if action == 'import':
-        if tableName == 'erpsoft':
-            tableName = 'erp'
-            dropTable = False
-        try:
-            titleList = tableTitles[tableName]
-        except:
-            return
-        if tableName == 'inventoried':
-            titleList = tableTitles['inventory']
-        fileData = readXlsContent(filePath, titleList, fileName)
-        os.remove(filePath)
-        if not fileData:
-            print('没有读取到excel表格数据，请确认是按照模版填写数据')
-            return
-        if tableName == 'erp' or tableName == 'erpsoft':
-            fileData = completeErpInformation(fileData)
-        elif tableName == 'inventoried':
-            fileData = complteInventoriedInformation(fileData)
-        elif tableName == 'schedual':
-            fileData = comleteSchedualInformation(fileData)
-        return importDatabase(tableName, fileData, dropTable=dropTable)
+        if module == 'assets':
+            return dealErpImportFile(filePath, tableName, fileName, tableTitles)
+        elif module == 'dailywork':
+            return dealDailyworkImportFile(filePath, tableName, fileName)
+
     elif action == 'query':
         result = []
-        queryList = readXlsQueryContent(filePath)
-        if not queryList:
-            print('没有读取到excel表格数据，请确认是按照模版填写数据')
-            cache.set('batchQueryStatus', '', 60)
-            return False
-        columns = htmlColums[tableName]
-        for ql in queryList:  # 逐条查询
-            items = getSingleData(tableName, 'asset_label', ql)
-            if items:
-                for item in items.values():
-                    line = []
-                    for i in columns:
-                        line.append(item[i])
-                    line[0] = ql
-                    result.append(line)
-            else:
-                line = [' ' for i in range(len(columns) - 1)]
-                line.insert(0, ql)
-                result.append(line)
+        if module == 'assets':
+            result = dealErpQueryFile(filePath, tableName, fileName, htmlColums)
+
         cache.set('exportQuery{}2XlsContent'.format(tableName), result, 2 * 60)
         cache.set('exportQuery{}2XlsName'.format(tableName), tableName, 2 * 60)
         cache.set('batchQuery{}Status'.format(tableName), 'success', 60)

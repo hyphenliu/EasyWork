@@ -15,13 +15,14 @@ class Fengdu(models.Model):
     note = models.CharField(max_length=255, verbose_name="备注")
     time = models.DateTimeField(auto_now=True, verbose_name="添加时间")
 
-
     class Meta:
-        ordering = ('-serial_number','-income_time')
+        ordering = ('-serial_number', '-income_time')
         verbose_name = 'HW封堵'
         verbose_name_plural = 'HW封堵数据表'
+
     def __str__(self):
         return self.serial_number
+
 
 class Jiefeng(models.Model):
     serial_number = models.CharField(max_length=12, verbose_name='编号')
@@ -108,3 +109,13 @@ class IPList(models.Model):
         ordering = ('ip',)
         verbose_name = 'IP名单'
         verbose_name_plural = 'IP名单'
+
+
+class AnsibleHost(models.Model):
+    group = models.CharField(max_length=50, blank=True, default='')
+    name = models.CharField(max_length=50, blank=True, default='')
+    ssh_host = models.CharField(max_length=50, blank=True, default='')
+    ssh_user = models.CharField(max_length=50, blank=True, default='')
+    ssh_port = models.CharField(max_length=50, blank=True, default='')
+    server_type = models.CharField(max_length=50, blank=True, default='')
+    commit = models.TextField(blank=True, null=True)

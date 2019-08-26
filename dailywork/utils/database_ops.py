@@ -1,8 +1,9 @@
 from django.db.models import Q, Count, Sum
+import datetime
 from dailywork.utils.data_struct import *
 from .xlrdwt import *
 
-def importDatabase(tableName, datas, dropTable=False):
+def importDatabase(tableName, datas, dropTable=False, dropTime=False):
     '''
     批量导入到数据表中
     :param tableName:
@@ -15,9 +16,16 @@ def importDatabase(tableName, datas, dropTable=False):
     dataList = []
     if dropTable:  # 需要清空数据表
         model.objects.all().delete()
-    for data in datas:
-        lineDict = dict(zip(vars, data))
-        dataList.append(model(**lineDict))
+    if dropTime:
+        today = datetime.date.today()
+        model.objects.filter(update=today).delete()
+    if tableName == 'sox':
+        for k, v in datas.items():
+            dataList.append(model(**v))
+    else:
+        for data in datas:
+            lineDict = dict(zip(vars, data))
+            dataList.append(model(**lineDict))
     try:
         model.objects.bulk_create(dataList)
         return True
@@ -27,22 +35,6 @@ def importDatabase(tableName, datas, dropTable=False):
 
 
 #################################################################################
-def getAllForColumns(tableName, columns):
-    '''
-    返回指定N个字段，以资产标签为key，value为指定字段
-    :param tableName:数据表名
-    :param columns:需要的数据
-    :return:{asset_label:columns}
-    '''
-    result = {}
-    columns = tuple(columns)
-    dataSets = tableClass[tableName].objects.all().values_list(*columns)
-    for ds in dataSets:
-        result[ds[index]] = ds
-
-    return result
-
-
 def getAll(tableName):
     '''
     通过Django Models获取数据表中所有的数据

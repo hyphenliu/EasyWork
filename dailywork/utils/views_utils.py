@@ -1,8 +1,10 @@
-from dailywork.utils.database_ops import *
+#from dailywork.utils.database_ops import *
 from django.core.cache import cache
 from random import randint
 import math
 from datetime import datetime
+
+from dailywork.utils.database_ops import *
 
 
 def simpleQuery(request, tablename):
@@ -122,3 +124,5 @@ def genLimit(per_limit, number=6):
         limit_list.append(final)
 
     return limit_list
+
+

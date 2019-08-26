@@ -3,7 +3,7 @@ import urllib, re, json, time, random
 from http import cookiejar
 from urllib import request
 from collections import defaultdict
-
+from dailywork.utils.phone import Phone
 
 class OA:
     def __init__(self, domain, user, password):
@@ -86,6 +86,66 @@ class OA:
         '''
         self.opener.open(request.Request('http://eip.%s/index.php/Home/User/logout.html' % self.domain))
 
+    def extractContact(self, content, org, dep):
+        '''
+        提取联系人信息
+        :param content:
+        :param org:
+        :param dep:
+        :return:
+        '''
+        p = Phone()
+        datas = content['data']
+        result = []
+        for data in datas:
+            name = data.get('cn', 'name not find').strip()
+            email = data.get('email', 'email not find').strip()
+            phone = data.get('preferredMobile', 'preferredMobile not find').strip()
+            address = p.main(phone)
+            if not address:
+                address = ' '
+                print('{0}没有找到归属地'.format(phone))
+            else:
+                address = address.split('|')[1]
+            level = data.get('level', '新员工').strip()
+            result.append([org, dep, name, address, email, phone, level])
+        return result
+
+    def extractOID(self, datas, level=1, parent_o='', parent_name=''):
+        '''
+        获取组织树状图信息
+        :param level:层级
+        :param parent_o:完整路径
+        :param parent_name:完整路径名
+        :return:
+        '''
+        result = {}
+        for data in datas:
+            display_name = data.get('displayName', 'displayName not exist').strip()
+            org = data.get('o', 'o not exist').strip()
+            parent_org = data.get('parentOrgId', 'parentOrgId not exist').strip()
+            o_path = parent_o + '|' + org
+            o_name_path = parent_name + '|' + display_name
+            result[display_name] = {'o': org, 'parent_org': parent_org, 'level': level}
+            if 'children' in data:
+                level += 1
+                result[display_name]['children'] = self.extractOID(data['children'], level, o_path, o_name_path)
+                level -= 1
+            else:
+                result[display_name]
+        return result
+
+    def readResJSON(self, response):
+        '''
+        读取api返回的json数据
+        :param response:
+        :return:
+        '''
+        return json.loads(response.read().decode('utf-8'), encoding='utf-8')
+
+    def timeStamp(self):
+        return int(round(time.time() * 1000))
+
     def getContactInfo(self, org_type='直属单位', org='信息技术中心（公司）'):
         '''
          获取用户通讯录，返回列表【公司，部门，姓名，邮箱，电话，职务】
@@ -137,71 +197,13 @@ class OA:
         for k, v in org_dep.items():
             contact_info_api = contact_info_api_prefix % (biz_type, v['o'], self.timeStamp())
             print(contact_info_api)
-            time.sleep(random.randint(1, 3))  # 随机休眠1-3秒
+            time.sleep(random.randint(1, 2))  # 随机休眠1-3秒
             response = self.opener.open(request.Request(contact_info_api))  # 获取部门联系人json信息
             json_content = self.readResJSON(response)  # 读取json信息
             result.extend(self.extractContact(json_content, org, k))
 
-        with open('out.txt', 'a+', encoding='utf-8') as f:
-            for rst in result:
-                f.write(','.join(rst) + '\n')
-
         self.logout()
 
         return result
-
-    def extractContact(self, content, org, dep):
-        '''
-        提取联系人信息
-        :param content:
-        :param org:
-        :param dep:
-        :return:
-        '''
-        datas = content['data']
-        result = []
-        for data in datas:
-            name = data.get('cn', 'name not find').strip()
-            email = data.get('email', 'email not find').strip()
-            phone = data.get('preferredMobile', 'preferredMobile not find').strip()
-            level = data.get('level', '新员工').strip()
-            result.append([org, dep, name, email, phone, level])
-        return result
-
-    def extractOID(self, datas, level=1, parent_o='', parent_name=''):
-        '''
-        获取组织树状图信息
-        :param level:层级
-        :param parent_o:完整路径
-        :param parent_name:完整路径名
-        :return:
-        '''
-        result = {}
-        for data in datas:
-            display_name = data.get('displayName', 'displayName not exist').strip()
-            org = data.get('o', 'o not exist').strip()
-            parent_org = data.get('parentOrgId', 'parentOrgId not exist').strip()
-            o_path = parent_o + '|' + org
-            o_name_path = parent_name + '|' + display_name
-            result[display_name] = {'o': org, 'parent_org': parent_org, 'level': level}
-            if 'children' in data:
-                level += 1
-                result[display_name]['children'] = self.extractOID(data['children'], level, o_path, o_name_path)
-                level -= 1
-            else:
-                result[display_name]
-        return result
-
-    def readResJSON(self, response):
-        '''
-        读取api返回的json数据
-        :param response:
-        :return:
-        '''
-        return json.loads(response.read().decode('utf-8'), encoding='utf-8')
-
-    def timeStamp(self):
-        return int(round(time.time() * 1000))
-
 # oa = OA()
 # oa.main()

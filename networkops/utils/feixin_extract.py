@@ -13,7 +13,7 @@ class FeiXin:
         '317956808':'深圳IT安全保障',
         '317860920':'基础防护群',
         '''
-        DBPATH = 'C:\\Users\\Hyphen.Liu\\Documents\\RCS\\479286517\\sqlite\\15019289058.db'
+        DBPATH = 'D:\\Documents\\feixin\\479286517\\sqlite\\15019289058.db'
         self.tmp_file = 'D:\\PycharmProjects\\sharezone\\config\\feixin.tmp'
 
         mydb = sqlite3.connect(DBPATH)

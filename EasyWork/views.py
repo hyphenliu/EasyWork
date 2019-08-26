@@ -8,7 +8,7 @@ from EasyWork.utils.file_operator import *
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 import time
-
+from dailywork.utils.phone import Phone
 from .utils import *
 from networkops.utils.feixin_extract import updateDatabase
 from networkops.utils.devicecheck import CheckDevice
