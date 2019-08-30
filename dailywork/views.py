@@ -49,10 +49,10 @@ def taxi_ajax(request, tablename):
 
 def sox(request):
     tableTitle = zip(htmlTitles['sox'], htmlColums['sox'])
-    batchQueryStatus = cache.get('batchQuery{}Status'.format('sox'))
+    uploadStatus = cache.get('download{0}{1}file'.format('dailywork', 'sox'))
 
     return render(request, 'pages/dailywork_sox_list.html',
-                      {'titles': tableTitle, 'querysuccess': batchQueryStatus})
+                      {'titles': tableTitle, 'uploadsuccess': uploadStatus})
 
 def sox_ajax(request):
     if request.is_ajax:

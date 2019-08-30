@@ -9,7 +9,7 @@
 from django.core.cache import cache
 from io import BytesIO
 import os, xlwt
-from datetime import datetime
+from datetime import datetime, date
 
 from inventory.utils.data_struct import tableClass as InventModelClass
 from inventory.utils.data_struct import htmlTitles as InventHmtlTitles
@@ -94,7 +94,7 @@ def dealDailyworkImportFile(filePath, tableName, fileName):
     '''
     if tableName == 'sox':
         # {'origin':[[],...],'matrix':{{},...}}
-        fileData = SOX.getXlsContent(filePath, department='基础平台')
+        fileData = SOX.getXlsContent(tableName, filePath, department='基础平台')
         return daily_dbops.importDatabase(tableName, fileData)
 
 
@@ -128,7 +128,14 @@ def dealErpQueryFile(filePath, tableName, htmlColums):
             line.insert(0, ql)
             result.append(line)
     return result
-
+def dealDailyworkQueryFile(filePath, tableName, htmlColums):
+    '''
+    处理日常工作批量查询文件
+    :param filePath:
+    :param tableName:
+    :param htmlColums:
+    :return:
+    '''
 
 def dealUploadFile(module, filePath, tableName, action, fileName):
     '''
@@ -151,8 +158,9 @@ def dealUploadFile(module, filePath, tableName, action, fileName):
     elif action == 'query':
         result = []
         if module == 'assets':
-            result = dealErpQueryFile(filePath, tableName, fileName, htmlColums)
-
+            result = dealErpQueryFile(filePath, tableName, htmlColums)
+        if module == 'dailywork':
+            result = dealDailyworkQueryFile(filePath, tableName, htmlColums)
         cache.set('exportQuery{}2XlsContent'.format(tableName), result, 2 * 60)
         cache.set('exportQuery{}2XlsName'.format(tableName), tableName, 2 * 60)
         cache.set('batchQuery{}Status'.format(tableName), 'success', 60)
@@ -160,6 +168,22 @@ def dealUploadFile(module, filePath, tableName, action, fileName):
 
 
 def responseXls(module, tableName, data, dataName):
+    '''
+
+    :param module:
+    :param tableName:
+    :param data:
+    :param dataName:
+    :return:
+    aqua 0x31; black 0x08; blue 0x0C; blue_gray 0x36; bright_green 0x0B; brown 0x3C; coral 0x1D; cyan_ega 0x0F;
+    dark_blue 0x12; dark_blue_ega 0x12; dark_green 0x3A; dark_green_ega 0x11; dark_purple 0x1C; dark_red 0x10;
+    dark_red_ega 0x10; dark_teal 0x38; dark_yellow 0x13; gold 0x33; gray_ega 0x17; gray25 0x16; gray40 0x37;
+    gray50 0x17; gray80 0x3F; green 0x11; ice_blue 0x1F; indigo 0x3E; ivory 0x1A; lavender 0x2E; light_blue 0x30;
+    light_green 0x2A; light_orange 0x34; light_turquoise 0x29; light_yellow 0x2B; lime 0x32; magenta_ega 0x0E;
+    ocean_blue 0x1E; olive_ega 0x13; olive_green 0x3B; orange 0x35; pale_blue 0x2C; periwinkle 0x18; pink 0x0E;
+    plum 0x3D; purple_ega 0x14; red 0x0A; rose 0x2D; sea_green 0x39; silver_ega 0x16; sky_blue 0x28; tan 0x2F;
+    teal 0x15; teal_ega 0x15; turquoise 0x0F; violet 0x14; white 0x09; yellow 0x0D
+    '''
     wb = xlwt.Workbook(encoding='utf-8')
     sheet = wb.add_sheet(dataName)
     htmlTitles = MODULE_DICT[module]['html_titles']
@@ -189,7 +213,7 @@ def responseXls(module, tableName, data, dataName):
         sheet.write(0, i, titles[i], style_heading)
     for r in range(len(data)):
         for c in range(len(data[r])):
-            if isinstance(data[r][c], datetime.date):
+            if isinstance(data[r][c], date):
                 sheet.write(r + 1, c, data[r][c], style_date)
             else:
                 sheet.write(r + 1, c, data[r][c])

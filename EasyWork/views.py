@@ -8,10 +8,11 @@ from EasyWork.utils.file_operator import *
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 import time
-from dailywork.utils.phone import Phone
 from .utils import *
 from networkops.utils.feixin_extract import updateDatabase
 from networkops.utils.devicecheck import CheckDevice
+from inventory.utils import database_ops as assets_dbops
+
 
 # try:
 #     print('[INFO] Excute scheduals')
@@ -44,8 +45,12 @@ def index(request):
 
 @login_required
 def downloadFile(request, module, tableName):
-    downloadFile = request.GET['filename']
-    filename = os.path.join(settings.DOWNLOAD_DIRS, downloadFile + '.xlsx')
+    if module == 'dailywork':
+        filename = cache.get('download{0}{1}file'.format(module, tableName))
+        downloadFile = os.path.splitext(filename.split(os.sep)[-1])[0]
+    else:
+        downloadFile = request.GET['filename']
+        filename = os.path.join(settings.DOWNLOAD_DIRS, downloadFile + '.xlsx')
     response = StreamingHttpResponse(readFile(filename))
     response['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     response['Content-Disposition'] = 'attachment;filename="{0}.xlsx"'.format(urlquote(downloadFile))
@@ -59,9 +64,9 @@ def downloadExcel(request, module, tableName):
         return
     if tableName == 'inventoried':
         if filename == '未盘点到资产下载':
-            data = queryUninventoriedData()
+            data = assets_dbops.queryUninventoriedData()
         elif filename == '盘点信息更新':
-            data = filterInventoriedData()
+            data = assets_dbops.filterInventoriedData()
     else:
         data = []
     response = HttpResponse(content_type='application/vnd.ms-excel')

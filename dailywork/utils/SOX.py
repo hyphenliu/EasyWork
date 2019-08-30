@@ -7,6 +7,8 @@
 @Desc  : 
 '''
 import os
+import datetime
+from django.core.cache import cache
 from openpyxl import Workbook, load_workbook
 from EasyWork.settings import DOWNLOAD_DIRS
 from dailywork.utils.database_ops import *
@@ -18,23 +20,25 @@ sox_feature = ['标准控制点编号', '控制点编号', '适用范围', '业�
                '部门', '负责人', '控制点分类', '参考文件', '建议关注点', '穿行测试资料']
 
 
-def getXlsContent(filename, department='基础平台'):
+def getXlsContent(tableName, filename, department='基础平台'):
     '''
     主程序入口
     提取部门控制矩阵
+    写入原始表单数据{'sheetname1':[[col1,col2,...],...],...}
     :param filename:
-    :return: {'matrix':{'省控制点编号':{'字段':字段值,...}},'orgin':[[col1,col2,...],...]}
+    :return: {'省控制点编号':{'字段':字段值,...}}
     '''
     ws_result = {}
-    ws_ori_result = []  # 保存原始信息
+    ws_ori_result = {}  # 保存原始信息
     staff_dict = getContactList(department)
-    wb = load_workbook(filename)
+    wb = load_workbook(filename, read_only=True, data_only=True)
     for sn in wb.sheetnames:  # 处理每个sheet
 
         print('sheet name:{0}'.format(sn))
         ws = wb[sn]
         feature_cols = getHeadLine(ws)
         if not feature_cols: continue
+        ws_ori_result[sn] = []  # 保留原始表格sheet名
         nrows = ws.max_row  # 最大行数
         ncols = ws.max_column  # 最大列数
         start_row_num = feature_cols['row_num']
@@ -42,7 +46,7 @@ def getXlsContent(filename, department='基础平台'):
         # 保存表头信息
         head_line = [cellValue(c) for c in ws[start_row_num]]
         head_line.insert(1, '部门责任人')
-        ws_ori_result.append(head_line)
+        ws_ori_result[sn].append(head_line)
         # 处理每一行
         for row in range(start_row_num, nrows + 1):
             item = {}
@@ -66,9 +70,9 @@ def getXlsContent(filename, department='基础平台'):
                 # 提取本门控制点原始信息
                 o_list = [cellValue(c) for c in ws[row]]
                 o_list.insert(1, staff_list)  # 插入部门联系人信息
-                ws_ori_result.append(o_list)
+                ws_ori_result[sn].append(o_list)
                 ws_result[item['province_point']] = item
-    writeContent(filename, ws_ori_result)
+    writeContent(tableName, filename, ws_ori_result, department)
     return ws_result
 
 
@@ -77,6 +81,10 @@ def cellValue(cell):
         return ' '
     if isinstance(cell.value, str):
         return cell.value.replace('\n', '')
+    if isinstance(cell.value, datetime.datetime):
+        return cell.value.strftime('%Y-%m-%d')
+    if isinstance(cell.value, int):
+        return str(cell.value)
     return cell.value
 
 
@@ -165,8 +173,19 @@ def getContactList(department):
     return result
 
 
-def writeContent(filename, data):
-    filename, ext = os.path.splitext(filename)
-
-    print(filename)
-    pass
+def writeContent(tableName, filename, data, department):
+    file_pre, ext = os.path.splitext(filename)
+    filename = '{0}-{1}{2}{3}'.format(file_pre[:-20], department, file_pre[-20:-9], ext)  # 去掉自动添加上去的时间戳，添加部门
+    file_item = filename.split(os.sep)
+    file_item[-2] = 'download'
+    filename = os.sep.join((file_item))
+    if os.path.exists(filename): os.remove(filename)  # 删除已经存在的文件
+    wb = Workbook()
+    for k, v in data.items():
+        ws = wb.create_sheet(k, 0)
+        for row in range(len(v)):
+            for col in range(len(v[row])):
+                ws.cell(row=row + 1, column=col + 1, value=v[row][col])  # cell 起始位置必须是1而非0
+    wb.save(filename)
+    wb.close()
+    cache.set('download{0}{1}file'.format('dailywork', tableName), filename, 1 * 60)

@@ -43,10 +43,10 @@ class SOX(models.Model):
     update = models.DateField(auto_now_add=True, verbose_name='添加时间')
 
     class Meta:
-        ordering = ('stand_point', 'staff')
+        ordering = ('-update', 'stand_point', 'staff')
         verbose_name = 'SOX控制矩阵'
         verbose_name_plural = 'SOX控制矩阵'
-        unique_together = ('province_point','update')
+        unique_together = ('province_point', 'update')
 
     def __str__(self):
         return self.province_point
