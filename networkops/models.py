@@ -119,3 +119,24 @@ class AnsibleHost(models.Model):
     ssh_port = models.CharField(max_length=50, blank=True, default='')
     server_type = models.CharField(max_length=50, blank=True, default='')
     commit = models.TextField(blank=True, null=True)
+
+
+class AccessList(models.Model):
+    direction = models.CharField(max_length=120, verbose_name="访问方向")
+    source_IP = models.CharField(max_length=120, verbose_name="源地址")
+    source_map_IP = models.CharField(max_length=120, verbose_name="源地址对应的映射IP")
+    source_port = models.CharField(max_length=120, verbose_name="源端口")
+    dest_IP = models.CharField(max_length=120, verbose_name="目的地址")
+    dest_map_IP = models.CharField(max_length=120, verbose_name="目的地址对应的映射IP")
+    dest_port = models.CharField(max_length=120, verbose_name="目的端口")
+    transport_protocal = models.CharField(max_length=120, verbose_name="传输层协议")
+    app_protocal = models.CharField(max_length=120, verbose_name="应用层协议")
+    access_use = models.CharField(max_length=120, verbose_name="策略用途")
+    vpn_domain = models.CharField(max_length=120, verbose_name="接入IP承载网所属VPN域")
+    update = models.DateField(auto_now_add=True, verbose_name="添加日期")
+
+    class Meta:
+        ordering = ('-update', 'source_IP')
+        verbose_name = '网络策略'
+        verbose_name_plural = '网络策略'
+        unique_together=('source_IP','dest_IP','dest_port')

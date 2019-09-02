@@ -30,6 +30,17 @@ def accesslist_product(request):
         pass
 
 
+def accesslists_ajax(request):
+    pass
+
+
+def accesslists(request):
+    access_list_title = zip(htmlTitles['accesslist'], htmlColums['accesslist'])
+    uploadStatus = cache.get('download{0}{1}file'.format('network', 'accesslist'))
+    return render(request, 'pages/network_accesslists.html',
+                  {'titles': access_list_title, 'uploadsuccess': uploadStatus})
+
+
 @login_required
 def ipCheck(request):
     titles = zip(htmlTitles['iplist'], htmlColums['iplist'])
@@ -148,7 +159,7 @@ def listpage(request, tablename):
 
     dataList, queryStr = simpleQuery(request, tablename, prefix)
 
-    cache.set('export{}2XlsContent'.format(tablename), export2Xls('network',dataList, tablename), 60)
+    cache.set('export{}2XlsContent'.format(tablename), export2Xls('network', dataList, tablename), 60)
     cache.set('export{}2XlsName'.format(tablename), tablename + '-' + queryStr, 60)
 
     total = dataList.count()

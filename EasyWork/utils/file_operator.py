@@ -29,7 +29,9 @@ from dailywork.utils.data_struct import tableColums as DailyworkTableColumns
 
 from inventory.utils import database_ops as asset_dbops
 from dailywork.utils import database_ops as daily_dbops
+from networkops.utils import database_ops as network_dbops
 from dailywork.utils import SOX
+from networkops.utils import accesslist
 
 MODULE_DICT = {
     'assets': {'model_class': InventModelClass, 'html_titles': InventHmtlTitles, 'html_columns': InventHtmlColumns,
@@ -98,6 +100,20 @@ def dealDailyworkImportFile(filePath, tableName, fileName):
         return daily_dbops.importDatabase(tableName, fileData)
 
 
+def dealNetworkImportFile(filePath, tableName, fileName):
+    '''
+    导入网络管理数据
+    :param filePath:
+    :param tableName:
+    :param fileName:
+    :return:
+    '''
+    # 导入网络策略开通表
+    if tableName == 'accesslist':
+        fileData = accesslist.readXlsContent(filePath)
+        return network_dbops.importDatabase(tableName, fileData, dropTable=False)
+
+
 def dealErpQueryFile(filePath, tableName, htmlColums):
     '''
     处理ERP批量查询文件
@@ -128,6 +144,8 @@ def dealErpQueryFile(filePath, tableName, htmlColums):
             line.insert(0, ql)
             result.append(line)
     return result
+
+
 def dealDailyworkQueryFile(filePath, tableName, htmlColums):
     '''
     处理日常工作批量查询文件
@@ -136,6 +154,7 @@ def dealDailyworkQueryFile(filePath, tableName, htmlColums):
     :param htmlColums:
     :return:
     '''
+
 
 def dealUploadFile(module, filePath, tableName, action, fileName):
     '''
@@ -154,6 +173,8 @@ def dealUploadFile(module, filePath, tableName, action, fileName):
             return dealErpImportFile(filePath, tableName, fileName, tableTitles)
         elif module == 'dailywork':
             return dealDailyworkImportFile(filePath, tableName, fileName)
+        elif module == 'network':
+            return dealNetworkImportFile(filePath, tableName, fileName)
 
     elif action == 'query':
         result = []

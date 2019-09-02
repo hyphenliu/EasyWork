@@ -40,33 +40,41 @@ def getHeadLine(sheet_content):
     '''
 
     result = {}
-    col_num = []
+    col_nums = []
+    warning = ''
     for sl in access_list:
         result[sl] = -1
     row_num = -1
     # 找到首行
     for row in sheet_content.rows:
         count = 0
-        cell_values = '|'.join([cellValue(c) for c in row])
-        cell_values = cell_values.replace('\n', '').strip('|')
+        cell_values1 = '|'.join([cellValue(c) for c in row])
+        cell_values = cell_values1.replace('\n', '').strip(' |')
+        if (len(cell_values1) - len(cell_values)) > 20:
+            warning = '表格[{}]存在大量无效空列，影响程序运行速度； '.format(sheet_content.title)
+            print(warning)
+        # result['ncols'] = len(cell_values.split('|')) # 有效列数，有的表格可能有好多空列，影响到运行速度
         for af in access_feature:
             if af in cell_values: count += 1
         if count > len(access_feature) / 2:
             row_num = row[1].row
             break
     if row_num < 0:
-        print('【ERROR】解析Excel出错，表单【{0}】没有找到超过半数的特征值行'.format(sheet_content.title))
+        print('[ERROR] 解析Excel出错，表单【{0}】没有找到超过半数的特征值行'.format(sheet_content.title))
         return
+    print('[SUCCESS] 找到有效表头的表单【{}】'.format(sheet_content.title))
     # 找到字段对应的列
     result['row_num'] = row_num
     for cell in sheet_content[row_num]:
+
         cv = cellValue(cell)
+        cv = re.sub(r'\s', '', cv)
         if not isinstance(cv, str) or not cv:
             # print('【ERROR】解析Excel第{0}行出错，存在单元格为空'.format(row_num))
             continue
         for af in access_feature:
-            key = access_list[access_feature.index(af)]
-            if af in cv and (result[key] < 0) and (cell.column not in col_num):
+            key = access_list[access_feature.index(af)]  # 根据特征值找到对应的存储字典key值
+            if af in cv and (result[key] < 0) and (cell.column not in col_nums):
                 if af in ['源端口', '目的端口', '传输层协议']:
                     first_col = sheet_content.cell(row=cell.row + 1, column=cell.column).value
                     if not af == '传输层协议':
@@ -93,8 +101,25 @@ def getHeadLine(sheet_content):
                         result['transport_protocal_udp'] = u
                 else:
                     result[key] = cell.column
-                col_num.append(cell.column)
-    return result
+                col_nums.append(cell.column)
+            elif ('映射IP' in af) and ('映射IP' in cv) and (cell.column not in col_nums):
+                if '源地址' in cv:
+                    result['source_map_IP'] = cell.column
+                    col_nums.append(cell.column)
+                elif '目的地址' in cv:
+                    result['dest_map_IP'] = cell.column
+                    col_nums.append(cell.column)
+                else:
+                    warning += '映射地址表头[{}]解析错误; '.format(cv)
+    for i in ['transport_protocal', 'source_port', 'dest_port']:
+        result.pop(i)
+    unresoled = []
+    for k, v in result.items():
+        if v < 0:
+            unresoled.append(access_feature[access_list.index(k)])
+    warning += '【{}】解析失败； '.format(', '.join(unresoled))
+    print('[WARNING]', warning)
+    return result, warning
 
 
 def extractIP(cell_content):
@@ -249,9 +274,11 @@ def extractPort(k, cell_content, tcp, udp):
     error_msg = ''
 
     if not cell_content.strip():
-        if k == 'dest_port_to':
-            return [], ' '
-        return [], '端口内容为空; '
+        if k.startswith('source_port'):
+            return ['不限'], error_msg
+        if k.endswith('to'):
+            return [], '目的端口【到】内容为空; '
+        return [], '目的端口【从】内容为空; '
     cell_content = cell_content.lower().replace('\n', ' ')
     if '不限' in cell_content:
         return ['不限'], error_msg
@@ -299,20 +326,24 @@ def readXlsContent(filename):
     :param filename:
     :return:
     '''
-    result = {}
+    print('处理文件：{}'.format(filename))
+    items_dict = {}
+    error_msgs_dict = {}
     wb = load_workbook(filename, read_only=True, data_only=True)
     sheet_list = wb.sheetnames
     for sheet_name in sheet_list:
+        error_msgs = []  # 存储错误信息
+        items = []  # 存储正确信息
         sheet = wb[sheet_name]
         sheet_name = sheet.title
         print('处理表单：{0}'.format(sheet_name))
-        head_index = getHeadLine(sheet)
+        head_index, warning = getHeadLine(sheet)
         if not head_index:
             continue
         # print(head_index)
         nrows = sheet.max_row
-        ncols = sheet.max_column
         start_row = head_index['row_num'] + 1
+        head_index.pop('row_num')
         if nrows < start_row + 1:
             print('{0}表格内容为空，请检查！'.format(sheet.title))
             return
@@ -333,17 +364,28 @@ def readXlsContent(filename):
                 elif '_port' in k:
                     port_dict, err_msg = extractPort(k, cell_value, transport_protocal_tcp, transport_protocal_udp)
                     item_dict[k] = port_dict
-                elif k == 'direction':
+                elif k == 'direction':# 提取访问方向信息
                     acc_list, err_msg = extractProvince(cell_value)
                     item_dict[k] = acc_list
                 else:
                     item_dict[k] = cell_value
                 error_msg += err_msg
+            # 每一行，只要出现错误信息就不添加到正确结果中
             if error_msg.strip():
-                print('第{0}行数据错误：{1}'.format(row, error_msg))
+                error_msg = '第[{0:^{1}d}]行数据错误：{2}'.format(row, len(str(nrows)), error_msg)
+                error_msgs.append(error_msg)
+                print(error_msg)
+            else:
+                items.append(item_dict)
+                for k, v in item_dict.items():
+                    print(k, v)
+        items_dict[sheet_name] = items
+        error_msgs_dict[sheet_name] = error_msgs
 
-            # print(direction,source_IP,source_map_IP,source_port_from,source_port_to,dest_IP,dest_map_IP,dest_port_from,
-            #       dest_port_to,transport_protocal_tcp,transport_protocal_udp,app_protocal,access_use,vpn_domain)
+    return items_dict, error_msgs_dict
+
+    # print(direction,source_IP,source_map_IP,source_port_from,source_port_to,dest_IP,dest_map_IP,dest_port_from,
+    #       dest_port_to,transport_protocal_tcp,transport_protocal_udp,app_protocal,access_use,vpn_domain)
 
 
 def complateAccessList(device, originalIP, mask, distinateIP, port):

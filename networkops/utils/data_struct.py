@@ -2,7 +2,7 @@ from networkops.models import *
 
 # 数据库表
 tableClass = {'fengdu': Fengdu, 'jiefeng': Jiefeng, 'paicha': PaiCha, 'jichufd': Jichufd, 'jichujf': Jichujf,
-              'iplist': IPList, 'baozhang': Baozhang}
+              'iplist': IPList, 'baozhang': Baozhang, 'accesslist': AccessList}
 tableColums = {
     'fengdu': ['serial_number', 'income_time', 'number_time', 'resource', 'ip_list', 'reason', 'excutor', 'outcome',
                'outcome_time', 'note'],
@@ -12,7 +12,9 @@ tableColums = {
     'jichufd': ['serial_number', 'income_time', 'resource', 'outcome'],
     'jichujf': ['serial_number', 'income_time', 'resource', 'outcome'],
     'baozhang': ['reason', 'ip_source', 'ip_dest', 'income_time', 'resource', 'level'],
-    'iplist': ['ip', 'location', 'belong', 'type', 'note']
+    'iplist': ['ip', 'location', 'belong', 'type', 'note'],
+    'accesslist': ['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
+                   'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']
 }
 
 tableTitles = {
@@ -22,7 +24,9 @@ tableTitles = {
     'jichufd': ['编号', '封堵时间', '封堵者', '封堵结果'],
     'jichujf': ['编号', '解封时间', '解封者', '解封结果'],
     'baozhang': ['告警内容', '源IP', '目的IP', '告警时间', '告警来源', '告警级别'],
-    'iplist': ['IP地址', '位置', '归属', '黑白名单', '备注']
+    'iplist': ['IP地址', '位置', '归属', '黑白名单', '备注'],
+    'accesslist': ['访问方向', '源地址', '源地址对应的映射IP', '源端口', '目的地址', '目的地址对应的映射IP', '目的端口', '传输层协议', '应用层协议', '策略用途',
+                   '接入IP承载网所属VPN域']
 }
 
 htmlTitles = {
@@ -32,7 +36,9 @@ htmlTitles = {
     'jichufd': ['编号', '封堵时间', '封堵者', '封堵结果'],
     'jichujf': ['编号', '解封时间', '解封者', '解封结果'],
     'baozhang': ['告警内容', '源IP', '目的IP', '告警时间', '告警来源', '告警级别'],
-    'iplist': ['IP地址', '位置', '归属', '黑白名单', '备注']
+    'iplist': ['IP地址', '位置', '归属', '黑白名单', '备注'],
+    'accesslist': ['访问方向', '源地址', '源地址对应的映射IP', '源端口', '目的地址', '目的地址对应的映射IP', '目的端口', '传输层协议', '应用层协议', '策略用途',
+                   '接入IP承载网所属VPN域']
 }
 
 htmlColums = {
@@ -45,7 +51,9 @@ htmlColums = {
     'jichufd': ['serial_number', 'income_time', 'resource', 'outcome'],
     'jichujf': ['serial_number', 'income_time', 'resource', 'outcome'],
     'baozhang': ['reason', 'ip_source', 'ip_dest', 'income_time', 'resource', 'level'],
-    'iplist': ['ip', 'location', 'belong', 'type', 'note']
+    'iplist': ['ip', 'location', 'belong', 'type', 'note'],
+    'accesslist': ['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
+                   'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']
 }
 
 fileNames = {
@@ -54,5 +62,6 @@ fileNames = {
     'paicha': 'HW排查',
     'jichufd': '深圳封堵',
     'jichujf': '深圳解封',
-    'iplist': 'IP名单'
+    'iplist': 'IP名单',
+    'accesslist': '网络策略开通',
 }
