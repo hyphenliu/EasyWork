@@ -19,10 +19,10 @@ def importDatabase(tableName, datas, dropTable=False, dropTime=False):
     if dropTime:
         today = datetime.date.today()
         model.objects.filter(update=today).delete()
-    if tableName == 'sox':
+    if isinstance(datas, dict):
         for k, v in datas.items():
             dataList.append(model(**v))
-    else:
+    elif isinstance(datas, list):
         for data in datas:
             lineDict = dict(zip(vars, data))
             dataList.append(model(**lineDict))

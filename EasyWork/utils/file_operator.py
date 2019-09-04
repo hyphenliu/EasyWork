@@ -110,8 +110,9 @@ def dealNetworkImportFile(filePath, tableName, fileName):
     '''
     # 导入网络策略开通表
     if tableName == 'accesslist':
-        fileData = accesslist.readXlsContent(filePath)
-        return network_dbops.importDatabase(tableName, fileData, dropTable=False)
+        fileData, msg = accesslist.readXlsContent(tableName, filePath)
+        cache.set('pageShowOn{}'.format(tableName), msg, 5 * 60)
+        return network_dbops.importDatabase(tableName, fileData, dropTable=True)
 
 
 def dealErpQueryFile(filePath, tableName, htmlColums):
@@ -211,6 +212,10 @@ def responseXls(module, tableName, data, dataName):
     titles = htmlTitles[tableName]
     style_date = xlwt.XFStyle()
     style_date.num_format_str = 'yyyy-mm-dd'
+    style_line = xlwt.XFStyle()
+    style_line.alignment.wrap = 1  # 自动换行
+    style_line.alignment.vert = 1  # 垂直居中
+
     style_heading = xlwt.easyxf("""
                     font:
                         name SimSun,
@@ -230,17 +235,46 @@ def responseXls(module, tableName, data, dataName):
                         top THIN,
                         bottom THIN;
                     """)
+    # 确定栏位宽度
+    col_width = []
     for i in range(len(titles)):
         sheet.write(0, i, titles[i], style_heading)
+        col_width.append(len_byte(titles[i]))
+
     for r in range(len(data)):
         for c in range(len(data[r])):
+            if col_width[c] / 2 < len_byte(str(data[r][c])):
+                col_width[c] = int((len_byte(data[r][c]) + r * col_width[c]) / (r + 1))
             if isinstance(data[r][c], date):
                 sheet.write(r + 1, c, data[r][c], style_date)
             else:
-                sheet.write(r + 1, c, data[r][c])
+                sheet.write(r + 1, c, data[r][c], style_line)
+    # 设置栏位宽度，栏位宽度小于10时候采用默认宽度
+    for i in range(len(col_width)):
+        col_width[i] = int(col_width[i] * 1.2)
+        if col_width[i] >= 1 and col_width[i] < 30:
+            sheet.col(i).width = 256 * (col_width[i] + 1)
+        elif col_width[i] >= 30 and col_width[i] < 80:
+            sheet.col(i).width = 256 * (int((col_width[i] - 30) / 3) + 31)
+        elif col_width[i] >= 80 and col_width[i] < 180:
+            sheet.col(i).width = 256 * (int((col_width[i] - 80) / 5) + 48)
+        elif col_width[i] >= 180 and col_width[i] <= 320:
+            sheet.col(i).width = 256 * (int((col_width[i] - 30) / 7) + 68)
+        elif col_width[i] > 320:
+            sheet.col(i).width = 256 * 90
+
     output = BytesIO()
     wb.save(output)
     return output
+
+
+def len_byte(value):
+    # 获取字符串长度，一个中文的长度为2
+    value = str(value)
+    length = max(len(i) for i in value.split('\n'))
+    utf8_length = max(len(i.encode('utf-8')) for i in value.split('\n'))
+    length = int((utf8_length - length) / 2 + length)
+    return length
 
 
 def export2Xls(module, data, tablename, db=True):

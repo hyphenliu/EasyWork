@@ -1,6 +1,8 @@
+import os
 import IPy
 import re
 from datetime import datetime, date
+from django.core.cache import cache
 from openpyxl import Workbook, load_workbook
 
 access_list = ['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
@@ -12,7 +14,7 @@ province_list = ['北京', '天津', '上海', '重庆', '河北', '山西', '�
 hq_list = ['信息港', '南方基地', '深圳', 'ucenter', '集团', '哈池', '呼池']
 
 
-def isIp(address):
+def _isIp(address):
     try:
         IPy.IP(address)
         return True
@@ -20,9 +22,9 @@ def isIp(address):
         return False
 
 
-def cellValue(cell):
+def _cellValue(cell):
     if not cell.value:
-        return ' '
+        return ''
     if isinstance(cell.value, str):
         return cell.value.replace('\n', ' ')
     if isinstance(cell.value, datetime):
@@ -32,7 +34,7 @@ def cellValue(cell):
     return cell.value
 
 
-def getHeadLine(sheet_content):
+def _getHeadLine(sheet_content):
     '''
     返回字段所在的行/列号，没有找到的字段列号为-1
     :param sheet_content:
@@ -45,10 +47,12 @@ def getHeadLine(sheet_content):
     for sl in access_list:
         result[sl] = -1
     row_num = -1
+    m_cells = sheet_content.merged_cells
+    print(m_cells)
     # 找到首行
     for row in sheet_content.rows:
         count = 0
-        cell_values1 = '|'.join([cellValue(c) for c in row])
+        cell_values1 = '|'.join([_cellValue(c) for c in row])
         cell_values = cell_values1.replace('\n', '').strip(' |')
         if (len(cell_values1) - len(cell_values)) > 20:
             warning = '表格[{}]存在大量无效空列，影响程序运行速度； '.format(sheet_content.title)
@@ -60,14 +64,14 @@ def getHeadLine(sheet_content):
             row_num = row[1].row
             break
     if row_num < 0:
-        print('[ERROR] 解析Excel出错，表单【{0}】没有找到超过半数的特征值行'.format(sheet_content.title))
-        return
+        print('[ERROR] 解析Excel出错，表单【{0}】没有找到超过半数的特征值行; '.format(sheet_content.title))
+        return {}, warning
     print('[SUCCESS] 找到有效表头的表单【{}】'.format(sheet_content.title))
     # 找到字段对应的列
     result['row_num'] = row_num
     for cell in sheet_content[row_num]:
 
-        cv = cellValue(cell)
+        cv = _cellValue(cell)
         cv = re.sub(r'\s', '', cv)
         if not isinstance(cv, str) or not cv:
             # print('【ERROR】解析Excel第{0}行出错，存在单元格为空'.format(row_num))
@@ -117,87 +121,105 @@ def getHeadLine(sheet_content):
     for k, v in result.items():
         if v < 0:
             unresoled.append(access_feature[access_list.index(k)])
-    warning += '【{}】解析失败； '.format(', '.join(unresoled))
+    if unresoled:
+        warning += '【{}】解析失败； '.format(', '.join(unresoled))
     print('[WARNING]', warning)
     return result, warning
 
 
-def extractIP(cell_content):
+def _extractIP(cell_content, column_name):
     '''
     提取并判断IP地址的正确性
     :param cell_content:
-    :return:
+    :return:[ip1,ip2]
     '''
 
     if not cell_content:
-        return
+        return [], '<u><b>{}</b></u>单元格为空; '.format(column_name)
     result = []
-    error_msg = ''
+    error_msg = []
     cell_content = cell_content.lower()
-    pattern = re.compile(r'[^\d/.-]+?')
+    pattern = re.compile(r'[^\d/.~-]+?')
 
     items = re.split(pattern, cell_content)
     for item in items:
         if not item.strip(): continue
         if item == '/': continue
         if not re.match(r'^(\d{1,3}\.){3}\d{1,3}', item):
-            error_msg += '[{0}]不是IP地址; '.format(item)
+            e_msg = '[{0}]不是IP地址; '.format(item)
+            if not e_msg in error_msg:
+                error_msg.append(e_msg)
             continue
-        if '-' in item:
-            ip_list = completeIPAddress(item)
+        if '-' in item or '~' in item:
+            ip_list = _completeIPAddress(item)
             if not ip_list:
-                error_msg += '[{0}]IP无法解析; '.format(item)
+                e_msg = '[{0}]IP无法解析; '.format(item)
+                if not e_msg in error_msg:
+                    error_msg.append(e_msg)
                 continue
             result.extend(ip_list)
         else:
             result.append(item)
     IP_list = []
     for item in result:
-        if not isIp(item):
-            error_msg += '[{0}]IP地址不合法; '.format(item)
+        if not _isIp(item):
+            e_msg = '[{0}]IP地址不合法; '.format(item)
+            if not e_msg in error_msg:
+                error_msg.append(e_msg)
             continue
         if item.startswith('255'):
-            error_msg += '[{0}]为子网掩码; '.format(item)
+            e_msg = '[{0}]为子网掩码; '.format(item)
+            if not e_msg in error_msg:
+                error_msg.append(e_msg)
             continue
         if item in IP_list:
-            error_msg += '[{}]地址重复; '.format(item)
+            e_msg = '[{}]地址重复; '.format(item)
+            if not e_msg in error_msg:
+                error_msg.append(e_msg)
             continue
         IP_list.append(item)
     if not result:
-        error_msg += '[{0}]没有提取到IP地址; '.format(cell_content)
-    return result, error_msg
+        e_msg = '<u><b>{}</b></u>没有提取到IP地址; '.format(column_name)
+        if not e_msg in error_msg:
+            error_msg.append(e_msg)
+    return sorted(result), ''.join(error_msg)
 
 
-def extractProvince(cell_content):
+def _extractProvince(cell_content, column_name):
+    '''
+    提取策略访问方向
+    :param cell_content:
+    :return: [源，目的，[中间]]
+    '''
     if not cell_content:
-        return
+        return [], '<u><b>{}</b></u>单元格为空; '.format(column_name)
     if not '>' in cell_content:
-        return ['', '', ''], '访问方向[{0}]填写有误; '.format(cell_content)
+        return ['', '', ''], '<u><b>{}</b></u>[{}]填写有误; '.format(column_name, cell_content)
     error_msg = ''
     access_from_checked = False
     access_to_checked = False
     cell_content = cell_content.lower()
-    cell_content = re.sub(r'-{0,}>', '>', cell_content)
+    cell_content = re.sub(r'[—-]{0,}>', '>', cell_content)
     items = cell_content.split('>')
     if len(items) < 2:
-        return
+        return [], '<u><b>{}</b></u>未使用“->”符号区分访问方向; '.format(column_name)
     access_from = items[0]
     access_to = items[-1]
-    if len(items) > 2:
-        access_middle = items[1:-1]
-    else:
-        access_middle = ''
     for pl in province_list:
         if pl in access_from:
+            items[0] = pl
             access_from_checked = '省端'
         if pl in access_to:
+            items[-1] = pl
             access_to_checked = '省端'
         if access_from_checked and access_to_checked:
             break
     for pl in hq_list:
         if pl in access_from:
+            items[0] = pl
             access_from_checked = '总部'
         if pl in access_to:
+            items[-1] = pl
             access_to_checked = '总部'
         if access_from_checked and access_to_checked:
             break
@@ -209,36 +231,46 @@ def extractProvince(cell_content):
     # print(access_from_checked, '|'.join(access_middle), access_to_checked)
     if not (access_from_checked and access_to_checked):
         error_msg += '[{0}]提取访问方向错误; '.format(cell_content)
-    return [access_from_checked, access_to_checked, access_middle], error_msg
+    route = '->'.join(items)
+    return route.upper(), error_msg
 
 
-def completeNumber(content):
+def _completeNumber(content):
+    '''
+    补充连续的数字
+    :param content:
+    :return:
+    '''
     result = []
-    if not '-' in content:
+    if '-' in content:
+        start = content.split('-')[0]
+        end = content.split('-')[-1]
+    elif '~' in content:
+        start = content.split('~')[0]
+        end = content.split('~')[-1]
+    else:
         return
-    start = content.split('-')[0]
-    end = content.split('-')[-1]
     for i in range(int(start), int(end) + 1):
         result.append(i)
     return result
 
 
-def completeIPAddress(content):
+def _completeIPAddress(content):
     if not content:
         return
     result = []
     items = content.split('.')
     if not len(items) == 4:
         return
-    if not '-' in items[-1]:
+    if not ('-' in items[-1] or '~' in items[-1]):
         return
-    for i in completeNumber(items[-1]):
+    for i in _completeNumber(items[-1]):
         items[-1] = str(i)
         result.append('.'.join(items))
     return result
 
 
-def extractNumber(line):
+def _extractNumber(line):
     error_msg = ''
     result = []
     pattern = re.compile(r'[^\d~-]+?')
@@ -246,7 +278,7 @@ def extractNumber(line):
     for item in items:
         if not item: continue
         if not re.match('^\d+$', item):
-            ports = completeNumber(item)
+            ports = _completeNumber(item)
             if not ports:
                 error_msg += '[{0}]端口解析错误; '.format(item)
                 continue
@@ -263,27 +295,24 @@ def extractNumber(line):
     return result, error_msg
 
 
-def extractPort(k, cell_content, tcp, udp):
+def _extractPort(k, cell_content, tcp, udp):
     '''
     提取端口号
     :param cell_content:
     :param tcp:
     :param udp:
-    :return:
+    :return: {'tcp':[],'udp':[]}
     '''
     error_msg = ''
-
+    # 单元格内容为空
     if not cell_content.strip():
         if k.startswith('source_port'):
             return ['不限'], error_msg
-        if k.endswith('to'):
-            return [], '目的端口【到】内容为空; '
-        return [], '目的端口【从】内容为空; '
+        return [], error_msg
+    # 单元格内容不为空
     cell_content = cell_content.lower().replace('\n', ' ')
     if '不限' in cell_content:
         return ['不限'], error_msg
-    tcp_index = -1
-    udp_index = -1
     tcp_ports = []
     udp_ports = []
     if tcp and udp:
@@ -293,51 +322,185 @@ def extractPort(k, cell_content, tcp, udp):
             tcp_index = cell_content.index('tcp')
             udp_index = cell_content.index('udp')
             if tcp_index > udp_index:
-                tcp_ports, err_msg = extractNumber(cell_content[tcp_index + 3:])
+                tcp_ports, err_msg = _extractNumber(cell_content[tcp_index + 3:])
                 error_msg += err_msg
-                udp_ports, err_msg = extractNumber(cell_content[:tcp_index])
+                udp_ports, err_msg = _extractNumber(cell_content[:tcp_index])
                 error_msg += err_msg
             else:
-                tcp_ports, err_msg = extractNumber(cell_content[:udp_index])
+                tcp_ports, err_msg = _extractNumber(cell_content[:udp_index])
                 error_msg += err_msg
-                udp_ports, err_msg = extractNumber(cell_content[udp_index + 3:])
+                udp_ports, err_msg = _extractNumber(cell_content[udp_index + 3:])
                 error_msg += err_msg
     elif tcp:
         if 'udp' in cell_content:
-            error_msg += '只选择了TCP但是出现UDP，{0};'.format(cell_content)
+            error_msg += '只选择了TCP但是出现UDP端口; '
         else:
-            tcp_ports, err_msg = extractNumber(cell_content)
+            tcp_ports, err_msg = _extractNumber(cell_content)
             error_msg += err_msg
     elif udp:
         if 'tcp' in cell_content:
-            error_msg += '只选择了UDP但是出现TCP，{0};'.format(cell_content)
+            error_msg += '只选择了UDP但是出现TCP端口; '
         else:
-            udp_ports, err_msg = extractNumber(cell_content)
+            udp_ports, err_msg = _extractNumber(cell_content)
             error_msg += err_msg
+    else:
+        error_msg += '未选择传输协议; '
     # print({'tcp': tcp_ports, 'udp': udp_ports}, error_msg)
-    if not (tcp_ports or udp_ports):
+    if not re.findall(r'\d+', cell_content):
         error_msg += '[{}]没有提取到端口信息; '.format(cell_content)
-    return {'tcp': tcp_ports, 'udp': udp_ports}, error_msg
+    return {'tcp': sorted(tcp_ports), 'udp': sorted(udp_ports)}, error_msg
 
 
-def readXlsContent(filename):
+def _completePortNumber(port_from, port_to):
+    '''
+    补全端口“从”-“到”之间的连续数字，确保tcp端口已经按升序排序
+    :param port_from: {'tcp': 'xx\nxx', 'udp': 'xx\nxx'}
+    :param port_to: {'tcp': 'xx\nxx', 'udp': 'xx\nxx'}
+    :return: {'tcp': 'xx\nxx', 'udp': 'xx\nxx'}
+    '''
+    f_tcp = port_from['tcp']
+    f_udp = port_from['udp']
+    t_tcp = port_to['tcp']
+    t_udp = port_to['udp']
+    result = {'tcp': '', 'udp': ''}
+    error_msg = ''
+    if not ((f_tcp and t_tcp) or (f_udp and t_udp)):
+        error_msg += '端口【从】和【到】协议不相同/'
+    elif f_tcp and t_tcp:
+        ports, err_msg = _checkPort(f_tcp, t_tcp)
+        if err_msg:
+            error_msg += err_msg
+        else:
+            result['tcp'] = '\n'.join(str(i) for i in ports)
+    elif f_udp and t_udp:
+        ports, err_msg = _checkPort(f_tcp, t_tcp)
+        if err_msg:
+            error_msg += err_msg
+        else:
+            result['udp'] = '\n'.join(str(i) for i in ports)
+    if error_msg:
+        error_msg = error_msg.strip('/') + '; '
+    return result, error_msg
+
+
+def _checkPort(f_ports, t_ports):
     '''
 
-    :param filename:
+    :param f_ports:
+    :param t_ports:
     :return:
     '''
+    ports = []
+    error_msg = ''
+    if not len(f_ports.split('\n')) == len(t_ports.split('\n')):
+        error_msg += '端口【从】和【到】端口号数量不同;'
+        return ports, error_msg
+
+    f_ports = f_ports.split('\n')
+    t_ports = t_ports.split('\n')
+    for i in range(len(f_ports)):
+        if f_ports[i] > t_ports[i]:
+            error_msg += '端口【从】大于【到】端口号数值/'
+            break
+        elif (i + 1) > len(f_ports):
+            if t_ports[i] > f_ports[i + 1]:
+                error_msg += '端口【从】和【到】端口号数值范围存在重叠/'
+                break
+    if error_msg:
+        return ports, error_msg
+
+    items = zip(f_ports, t_ports)
+    for s, e in items:
+        if s > e:
+            error_msg += '端口【从】大于【到】端口号数值/'
+        else:
+            ports.extend(_completeNumber(s + '-' + e))
+    return ports, error_msg
+
+
+def _sortItem(item_dict):
+    '''
+    将每一行的字典值转化为列表值，以便存入到数据库中。前提是前面的已经将错误信息处理了
+    :param item_dict:
+    :return:['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
+            'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']
+    '''
+    error_msg = ''
+    items = []
+    # 处理源端口信息
+    s_port_from = item_dict['source_port_from']
+    s_port_to = item_dict['source_port_to']
+    if s_port_from and s_port_to:
+        if s_port_from == s_port_to:
+            item_dict['source_port'] = s_port_from
+        else:
+            ports, err_msg = _completePortNumber(s_port_from, s_port_to)
+            if err_msg:
+                error_msg += err_msg
+            else:
+                item_dict['source_port'] = ports
+    elif not (s_port_from or s_port_to):
+        item_dict['source_port'] = '不限'
+    elif s_port_from:
+        item_dict['source_port'] = s_port_from
+    else:
+        item_dict['source_port'] = s_port_to
+    # 处理目的端口信息
+    d_port_from = item_dict['dest_port_from']
+    d_port_to = item_dict['dest_port_to']
+    if d_port_from and d_port_to:
+        if d_port_from == d_port_to:
+            item_dict['dest_port'] = d_port_from
+        else:
+            ports, err_msg = _completePortNumber(d_port_from, d_port_to)
+            if err_msg:
+                error_msg += err_msg
+            else:
+                item_dict['dest_port'] = ports
+    elif not (d_port_from or d_port_to):
+        error_msg = '没有指定目的端口号; '
+    elif d_port_from:
+        item_dict['dest_port'] = d_port_from
+    else:
+        item_dict['dest_port'] = d_port_to
+    # 前面出现错误信息则终止
+    if error_msg: return items, error_msg
+    # 拆分同时含有TCP和UDP协议的端口为2条信息
+    if item_dict['dest_port']['tcp']:
+        items.append(
+            [item_dict['direction'], item_dict['source_IP'], item_dict['source_map_IP'], item_dict['source_port'],
+             item_dict['dest_IP'], item_dict['dest_map_IP'], item_dict['dest_port']['tcp'], 'tcp',
+             item_dict['app_protocal'], item_dict['access_use'], item_dict['vpn_domain']])
+    if item_dict['dest_port']['udp']:
+        items.append(
+            [item_dict['direction'], item_dict['source_IP'], item_dict['source_map_IP'], item_dict['source_port'],
+             item_dict['dest_IP'], item_dict['dest_map_IP'], item_dict['dest_port']['udp'], 'udp',
+             item_dict['app_protocal'], item_dict['access_use'], item_dict['vpn_domain']])
+
+    return items, error_msg
+
+
+def readXlsContent(tableName, filename):
+    '''
+    读取excel表格内容，获取网络策略开通单的表头，提取表头对应列的数据
+    :param filename:
+    :return:data=[['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
+                    'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']......],
+            msg_dict={'error':'','warning':''} # HTML格式的字符串
+    '''
     print('处理文件：{}'.format(filename))
-    items_dict = {}
-    error_msgs_dict = {}
-    wb = load_workbook(filename, read_only=True, data_only=True)
+    data = []
+    message = ''
+    warning_msgs = []
+    error_msgs = []
+    wb = load_workbook(filename, data_only=True)
     sheet_list = wb.sheetnames
     for sheet_name in sheet_list:
-        error_msgs = []  # 存储错误信息
-        items = []  # 存储正确信息
+        errors = []  # 存储检查本表单发现的错误信息
         sheet = wb[sheet_name]
         sheet_name = sheet.title
         print('处理表单：{0}'.format(sheet_name))
-        head_index, warning = getHeadLine(sheet)
+        head_index, warning = _getHeadLine(sheet)
         if not head_index:
             continue
         # print(head_index)
@@ -348,44 +511,88 @@ def readXlsContent(filename):
             print('{0}表格内容为空，请检查！'.format(sheet.title))
             return
         for row in range(start_row + 1, nrows + 1):
-            item_dict = {}
-            error_msg = ''
+            if not ''.join([_cellValue(c) for c in sheet[row]]): continue
+            item_dict = {}  # 记录每一列的信息
+            error_msg = []  # 记录每一行的错误信息
             transport_protocal_tcp = sheet.cell(row=row, column=head_index['transport_protocal_tcp']).value
             transport_protocal_udp = sheet.cell(row=row, column=head_index['transport_protocal_udp']).value
             for k, v in head_index.items():
                 if v < 0:
-                    item_dict[k] = ' '
+                    item_dict[k] = ''
                     continue
                 err_msg = ''
-                cell_value = cellValue(sheet.cell(row=row, column=v))
+                cell_value = _cellValue(sheet.cell(row=row, column=v))
                 if 'IP' in k:
-                    IP_list, err_msg = extractIP(cell_value)
-                    item_dict[k] = IP_list
+                    IP_list, err_msg = _extractIP(cell_value, access_feature[access_list.index(k)])
+                    item_dict[k] = '\n'.join(IP_list)
                 elif '_port' in k:
-                    port_dict, err_msg = extractPort(k, cell_value, transport_protocal_tcp, transport_protocal_udp)
-                    item_dict[k] = port_dict
-                elif k == 'direction':# 提取访问方向信息
-                    acc_list, err_msg = extractProvince(cell_value)
+                    port_dict, err_msg = _extractPort(k, cell_value, transport_protocal_tcp, transport_protocal_udp)
+                    if isinstance(port_dict, dict):
+                        for i, j in port_dict.items():
+                            port_dict[i] = '\n'.join(str(n) for n in j)
+                        item_dict[k] = port_dict
+                    else:
+                        item_dict[k] = '\n'.join(str(i) for i in port_dict)
+                elif k == 'direction':  # 提取访问方向信息
+                    acc_list, err_msg = _extractProvince(cell_value, access_feature[access_list.index(k)])
                     item_dict[k] = acc_list
                 else:
                     item_dict[k] = cell_value
-                error_msg += err_msg
+                # 去除重复的错误
+                if not (err_msg.strip() in error_msg):
+                    error_msg.append(err_msg.strip())
+            error_msg = ''.join(error_msg)
+            # 处理每一列的信息，将字典值转化为列表值，处理端口信息
+            item_list, err_msg = _sortItem(item_dict)
+            error_msg += err_msg
             # 每一行，只要出现错误信息就不添加到正确结果中
             if error_msg.strip():
                 error_msg = '第[{0:^{1}d}]行数据错误：{2}'.format(row, len(str(nrows)), error_msg)
-                error_msgs.append(error_msg)
-                print(error_msg)
+                errors.append(error_msg)
+                # print(error_msg)
             else:
-                items.append(item_dict)
-                for k, v in item_dict.items():
-                    print(k, v)
-        items_dict[sheet_name] = items
-        error_msgs_dict[sheet_name] = error_msgs
+                for il in item_list:
+                    data.append(il)
+        if warning:  # 合并告警信息
+            warning_msgs.append('表单<b>《{}》</b>存在的告警信息：'.format(sheet_name))
+            warning_msgs.append(warning)
+        if errors:  # 合并错误信息
+            error_msgs.append('表单<b>《{}》</b>存在的错误信息：'.format(sheet_name))
+            error_msgs.extend(errors)
+    # print(data, {'warning': warning_msgs, 'errors': error_msgs})
+    if warning_msgs:
+        message += '<div style="background:#FF0">{}</div>'.format(
+            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]))
+    if error_msgs:
+        message += '<div style="color:#F00">{}</div>'.format(''.join(['<p>{}</p>'.format(i) for i in error_msgs]))
+    # 写入原始数据到文件中，并在redis中提供下载刚刚生成的文件
+    # _writeContent(tableName, filename, data)
+    return data, message
 
-    return items_dict, error_msgs_dict
 
-    # print(direction,source_IP,source_map_IP,source_port_from,source_port_to,dest_IP,dest_map_IP,dest_port_from,
-    #       dest_port_to,transport_protocal_tcp,transport_protocal_udp,app_protocal,access_use,vpn_domain)
+def _writeContent(tableName, filename, data):
+    '''
+    生成网络策略开通文件
+    :param tableName:
+    :param filename:
+    :param data:
+    :return:
+    '''
+    file_pre, ext = os.path.splitext(filename)
+    filename = '{0}{1}{2}'.format(file_pre[:-20], file_pre[-20:-9], ext)  # 去掉自动添加上去的时间戳
+    file_item = filename.split(os.sep)
+    file_item[-2] = 'download'
+    filename = os.sep.join((file_item))
+    if os.path.exists(filename): os.remove(filename)  # 删除已经存在的文件
+    wb = Workbook()
+    for k, v in data.items():
+        ws = wb.create_sheet(k, 0)
+        for row in range(len(v)):
+            for col in range(len(v[row])):
+                ws.cell(row=row + 1, column=col + 1, value=v[row][col])  # cell 起始位置必须是1而非0
+    wb.save(filename)
+    wb.close()
+    cache.set('download{0}{1}file'.format('dailywork', tableName), filename, 1 * 60)
 
 
 def complateAccessList(device, originalIP, mask, distinateIP, port):
@@ -394,7 +601,7 @@ def complateAccessList(device, originalIP, mask, distinateIP, port):
     originalIP = originalIP.split()
     distinateIP = distinateIP.split()
 
-    if not isIp(mask):
+    if not _isIp(mask):
         errors['mask'] = mask
         return data, errors
 
@@ -404,14 +611,14 @@ def complateAccessList(device, originalIP, mask, distinateIP, port):
         port_str = ' eq '
 
     for o in originalIP:
-        if not isIp(o):
+        if not _isIp(o):
             if errors['originalIP']:
                 errors['originalIP'] = errors['originalIP'] + ',' + o
             else:
                 errors['originalIP'] = o
             continue
         for d in distinateIP:
-            if not isIp(d):
+            if not _isIp(d):
                 if errors['distinateIP']:
                     errors['distinateIP'] = errors['originalIP'] + ',' + d
                 else:
@@ -427,6 +634,3 @@ def complateAccessList(device, originalIP, mask, distinateIP, port):
                 accesslist_str = '请选择厂商'
             data = data + '<p>' + accesslist_str + '</p>'
     return data, errors
-
-
-#readXlsContent('C:\\Users\\Hyphen.Liu\\Desktop\\安全运营管理中心一期项目第十批IP互联工作单（态势)-用于探针策略下发.xlsx')

@@ -30,13 +30,13 @@ def getXlsContent(tableName, filename, department='基础平台'):
     '''
     ws_result = {}
     ws_ori_result = {}  # 保存原始信息
-    staff_dict = getContactList(department)
+    staff_dict = _getContactList(department)
     wb = load_workbook(filename, read_only=True, data_only=True)
     for sn in wb.sheetnames:  # 处理每个sheet
 
         print('sheet name:{0}'.format(sn))
         ws = wb[sn]
-        feature_cols = getHeadLine(ws)
+        feature_cols = _getHeadLine(ws)
         if not feature_cols: continue
         ws_ori_result[sn] = []  # 保留原始表格sheet名
         nrows = ws.max_row  # 最大行数
@@ -44,7 +44,7 @@ def getXlsContent(tableName, filename, department='基础平台'):
         start_row_num = feature_cols['row_num']
         feature_cols.pop('row_num')
         # 保存表头信息
-        head_line = [cellValue(c) for c in ws[start_row_num]]
+        head_line = [_cellValue(c) for c in ws[start_row_num]]
         head_line.insert(1, '部门责任人')
         ws_ori_result[sn].append(head_line)
         # 处理每一行
@@ -53,30 +53,31 @@ def getXlsContent(tableName, filename, department='基础平台'):
             # 提取部门员工，未含本部门员工则跳过
             staff_cell = ws.cell(row=row, column=feature_cols['duty']).value
             if not staff_cell: continue
-            staff_list = extractContactor(staff_cell, staff_dict)
+            staff_list = _extractContactor(staff_cell, staff_dict)
             if not staff_list: continue
 
             department_cell = ws.cell(row=row, column=feature_cols['department_list']).value
             # 提取可能存在问题的信息
-            if not departmentFilter(department_cell, staff_cell): staff_list = '[注意]' + staff_list
+            if not _departmentFilter(department_cell, staff_cell): staff_list = '[注意]' + staff_list
             for k, v in feature_cols.items():
                 if v < 0:
                     item[k] = '未提取到'
                     continue
-                item[k] = cellValue(ws.cell(row=row, column=v))
+                item[k] = _cellValue(ws.cell(row=row, column=v))
             item['duty'] = staff_cell
             item['staff'] = staff_list
             if not item['province_point'] in ws_result:  # 不重复控制点
                 # 提取本门控制点原始信息
-                o_list = [cellValue(c) for c in ws[row]]
+                o_list = [_cellValue(c) for c in ws[row]]
                 o_list.insert(1, staff_list)  # 插入部门联系人信息
                 ws_ori_result[sn].append(o_list)
                 ws_result[item['province_point']] = item
-    writeContent(tableName, filename, ws_ori_result, department)
+    # 写入原始数据到文件中，并在redis中提供下载刚刚生成的文件
+    _writeContent(tableName, filename, ws_ori_result, department)
     return ws_result
 
 
-def cellValue(cell):
+def _cellValue(cell):
     if not cell.value:
         return ' '
     if isinstance(cell.value, str):
@@ -88,7 +89,7 @@ def cellValue(cell):
     return cell.value
 
 
-def getHeadLine(sheet_content):
+def _getHeadLine(sheet_content):
     '''
     返回字段所在的行/列号，没有找到的字段列号为-1
     :param sheet_content:
@@ -103,7 +104,7 @@ def getHeadLine(sheet_content):
     # 找到首行
     for row in sheet_content.rows:
         count = 0
-        cell_values = '|'.join([cellValue(c) for c in row])
+        cell_values = '|'.join([_cellValue(c) for c in row])
         cell_values = cell_values.replace('\n', '').strip('|')
         for sf in sox_feature:
             if sf in cell_values: count += 1
@@ -130,7 +131,7 @@ def getHeadLine(sheet_content):
     return result
 
 
-def extractContactor(xls_data, staff_dict):
+def _extractContactor(xls_data, staff_dict):
     '''
     提取出部门控制点责任人
     :param xls_data:
@@ -152,7 +153,7 @@ def extractContactor(xls_data, staff_dict):
     return ','.join(result)
 
 
-def departmentFilter(dep_data, staff_cell):
+def _departmentFilter(dep_data, staff_cell):
     for i in ['基础', '实物管理部门', '工程建设部门', '各采购需求部门', '各采购验收部门', '工程实施部门']:
         if i in dep_data:
             return True
@@ -160,7 +161,7 @@ def departmentFilter(dep_data, staff_cell):
         return True
 
 
-def getContactList(department):
+def _getContactList(department):
     '''
     根据部门查询部门员工姓名和电话
     :param department:
@@ -173,7 +174,7 @@ def getContactList(department):
     return result
 
 
-def writeContent(tableName, filename, data, department):
+def _writeContent(tableName, filename, data, department):
     file_pre, ext = os.path.splitext(filename)
     filename = '{0}-{1}{2}{3}'.format(file_pre[:-20], department, file_pre[-20:-9], ext)  # 去掉自动添加上去的时间戳，添加部门
     file_item = filename.split(os.sep)

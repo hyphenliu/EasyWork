@@ -21,7 +21,7 @@ class OA:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0',
             'Connection': 'keep-alive'
         }
-        paramsDict = self.getFirstLoginInfo()
+        paramsDict = self._getFirstLoginInfo()
         if not paramsDict:
             return
         self.loginHeaders['Referer'] = self.loginUrl
@@ -40,10 +40,10 @@ class OA:
         self.cookieHandler = request.HTTPCookieProcessor(self.cookie)
         self.opener = request.build_opener(self.cookieHandler, request.HTTPHandler)
 
-    def getFirstLoginInfo(self):
+    def _getFirstLoginInfo(self):
         '''
 
-        :return: 
+        :return:
         '''
         extractPattern = re.compile(
             '.+?token=(?P<token>.+?)&success=(?P<success>.+?)&apptempid=(?P<apptempid>.+?)$')
@@ -64,7 +64,7 @@ class OA:
             print('请求失败')
             return
 
-    def login(self):
+    def _login(self):
         '''
         登录到首页
         :return:
@@ -79,14 +79,14 @@ class OA:
             print('请求失败')
             return False
 
-    def logout(self):
+    def _logout(self):
         '''
         退出登录
         :return:
         '''
         self.opener.open(request.Request('http://eip.%s/index.php/Home/User/logout.html' % self.domain))
 
-    def extractContact(self, content, org, dep):
+    def _extractContact(self, content, org, dep):
         '''
         提取联系人信息
         :param content:
@@ -111,7 +111,7 @@ class OA:
             result.append([org, dep, name, address, email, phone, level])
         return result
 
-    def extractOID(self, datas, level=1, parent_o='', parent_name=''):
+    def _extractOID(self, datas, level=1, parent_o='', parent_name=''):
         '''
         获取组织树状图信息
         :param level:层级
@@ -129,13 +129,13 @@ class OA:
             result[display_name] = {'o': org, 'parent_org': parent_org, 'level': level}
             if 'children' in data:
                 level += 1
-                result[display_name]['children'] = self.extractOID(data['children'], level, o_path, o_name_path)
+                result[display_name]['children'] = self._extractOID(data['children'], level, o_path, o_name_path)
                 level -= 1
             else:
                 result[display_name]
         return result
 
-    def readResJSON(self, response):
+    def _readResJSON(self, response):
         '''
         读取api返回的json数据
         :param response:
@@ -143,7 +143,7 @@ class OA:
         '''
         return json.loads(response.read().decode('utf-8'), encoding='utf-8')
 
-    def timeStamp(self):
+    def _timeStamp(self):
         return int(round(time.time() * 1000))
 
     def getContactInfo(self, org_type='直属单位', org='信息技术中心（公司）'):
@@ -151,7 +151,7 @@ class OA:
          获取用户通讯录，返回列表【公司，部门，姓名，邮箱，电话，职务】
         :return:[[org, dep, name, email, phone, level],...]
         '''
-        if not self.login(): return  # 登录失败直接返回
+        if not self._login(): return  # 登录失败直接返回
         result = []
         self.org_tree = defaultdict(list)
         url_prefix = 'http://cloudapps.%s/ua/' % self.domain
@@ -185,24 +185,24 @@ class OA:
         else:
             return
         contact_index_url = contact_index_url_prefix % (index_type, penix)
-        contact_tree_api = contact_tree_api_prefix % (org_tree, biz_type, oid, self.timeStamp())
+        contact_tree_api = contact_tree_api_prefix % (org_tree, biz_type, oid, self._timeStamp())
         print(contact_index_url)
         self.opener.open(request.Request(contact_index_url))  # 访问通讯录页面，不能跳过
         time.sleep(random.randint(2, 5))  # 随机休眠2-5秒
         print(contact_tree_api)
         response = self.opener.open(request.Request(contact_tree_api))  # 获取通讯录的组织结构树状图json信息
-        json_content = self.readResJSON(response)  # 读取json信息
-        org_rst = self.extractOID(json_content['data']['children'])  # 获取类型下所有机构的树状json信息
+        json_content = self._readResJSON(response)  # 读取json信息
+        org_rst = self._extractOID(json_content['data']['children'])  # 获取类型下所有机构的树状json信息
         org_dep = org_rst[org_type]['children'][org]['children']  # 获取指定公司的树状json信息
         for k, v in org_dep.items():
-            contact_info_api = contact_info_api_prefix % (biz_type, v['o'], self.timeStamp())
+            contact_info_api = contact_info_api_prefix % (biz_type, v['o'], self._timeStamp())
             print(contact_info_api)
             time.sleep(random.randint(1, 2))  # 随机休眠1-3秒
             response = self.opener.open(request.Request(contact_info_api))  # 获取部门联系人json信息
-            json_content = self.readResJSON(response)  # 读取json信息
-            result.extend(self.extractContact(json_content, org, k))
+            json_content = self._readResJSON(response)  # 读取json信息
+            result.extend(self._extractContact(json_content, org, k))
 
-        self.logout()
+        self._logout()
 
         return result
 # oa = OA()

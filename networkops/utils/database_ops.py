@@ -34,9 +34,13 @@ def importDatabase(tableName, datas, dropTable=False):
     dataList = []
     if dropTable:  # 需要清空数据表
         model.objects.all().delete()
-    for data in datas:
-        lineDict = dict(zip(vars, data))
-        dataList.append(model(**lineDict))
+    if isinstance(datas, list):
+        for data in datas:
+            lineDict = dict(zip(vars, data))
+            dataList.append(model(**lineDict))
+    elif isinstance(datas, dict):
+        for k, v in datas.items():
+            dataList.append(model(**v))
     try:
         model.objects.bulk_create(dataList)
         return True

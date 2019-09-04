@@ -11,12 +11,12 @@ from networkops.utils.views_utils import *
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
 
+@login_required
+def access_list(request):
+    return render(request, 'pages/network_access_list.html')
 
-def accesslist(request):
-    return render(request, 'pages/network_accesslist.html')
-
-
-def accesslist_product(request):
+@login_required
+def access_list_product(request):
     if request.is_ajax():
         device = request.GET.get('device')
         originalIP = request.GET.get('originalIP')
@@ -29,16 +29,13 @@ def accesslist_product(request):
     else:
         pass
 
-
-def accesslists_ajax(request):
-    pass
-
-
-def accesslists(request):
+@login_required
+def accesslist(request):
     access_list_title = zip(htmlTitles['accesslist'], htmlColums['accesslist'])
     uploadStatus = cache.get('download{0}{1}file'.format('network', 'accesslist'))
-    return render(request, 'pages/network_accesslists.html',
-                  {'titles': access_list_title, 'uploadsuccess': uploadStatus})
+    msg = cache.get('pageShowOn{}'.format('accesslist'), '')  # 获取处理结果，如错误信息，告警信息
+    return render(request, 'pages/network_accesslist.html',
+                  {'titles': access_list_title, 'msg': msg, 'uploadsuccess': uploadStatus})
 
 
 @login_required
@@ -158,7 +155,6 @@ def listpage(request, tablename):
         offset = request.GET.get('offset')
 
     dataList, queryStr = simpleQuery(request, tablename, prefix)
-
     cache.set('export{}2XlsContent'.format(tablename), export2Xls('network', dataList, tablename), 60)
     cache.set('export{}2XlsName'.format(tablename), tablename + '-' + queryStr, 60)
 

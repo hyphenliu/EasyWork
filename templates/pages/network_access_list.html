@@ -1,0 +1,154 @@
+{% extends 'snippet/layout.html' %}
+
+{% block title %}网络策略生成器{% endblock %}
+{% block wrapper-content %}
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>生成网络策略</h5>
+                </div>
+                <div class="ibox-content">
+                    <form class="form-horizontal" method="post" action="/network/accesslist/" id="access_form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="col-lg-3 control-label">设备厂商：</label>
+                            <div class="col-lg-9">
+                                <select class="form-control m-b" name="device" id="sel_device">
+                                    <option value="CISCO" selected="selected">CISCO</option>
+                                    <option value="H3C">H3C</option>
+                                    <option value="huawei">华为</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-lg-3 control-label" for="originalIP">源IP地址：</label>
+                            <div class="col-lg-9">
+                                <textarea id="originalIP" rows="3" cols="20" name="originalIP"
+                                          class="form-control"></textarea>
+                                <span class="help-block m-b-none" id="originalIPError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-lg-3 control-label" for="mask">子网掩码：</label>
+                            <div class="col-lg-9">
+                                <input id="mask" type="text" class="form-control" name="mask"/>
+                                <span class="help-block m-b-none" id="maskError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-lg-3 control-label" for="distinateIP">目的IP地址：</label>
+                            <div class="col-lg-9">
+                                <textarea id="distinateIP" rows="3" cols="20" name="distinateIP"
+                                          class="form-control"></textarea>
+                                <span class="help-block m-b-none" id="distinateIPError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-lg-3 control-label" for="port">端口号：</label>
+                            <div class="col-lg-9">
+                                <input id="port" type="text" class="form-control" name="port"/>
+                                <span class="help-block m-b-none" id="portError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-lg-offset-5 col-lg-10">
+                                <input type="button" class="btn btn-success" id="submit" value="生成策略"></input>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>生成结果如下：</h5>
+                </div>
+                <div class="ibox-content" id="result">
+                    <p id="retContent"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>样例</h5>
+                </div>
+                <div class="ibox-content">
+                    <h4> cisco样例: </h4>
+                    <p>access-list outside extended permit tcp 192.168.59.0 255.255.255.0 host 192.168.70.18 eq 7456</p>
+                    <font color="red"><strong>或</strong></font>
+                    <p>access-list outside extended permit tcp 192.168.59.0 255.255.255.0 host 192.168.70.18 range 7456
+                        7558 </p>
+                    <hr/>
+                    <h4> H3C 9006样例： </h4>
+                    <p>rule permit tcp source 172.17.250.0 0.0.0.255 destination 192.168.86.66 0.0.0.1
+                        destination-port range 8080 8090 </p>
+                    <font color="red"><strong>或</strong></font>
+                    <p>rule permit tcp source 172.17.250.0 0.0.0.255 destination 192.168.86.66 0.0.0.1 destination-port
+                        eq
+                        8080</p>
+                    <hr/>
+                    <h4>华为 样例（和H3C类似）：</h4>
+                    <p>rule permit tcp source 192.168.86.64 0 destination 192.168.95.64 0.0.0.63 destination-port
+                        range 21 22 </p>
+                    <font color="red"><strong>或</strong></font>
+                    <p> rule permit tcp source 192.168.86.64 0 destination 192.168.95.64 0.0.0.63 destination-port eq
+                        21 </p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block tail-scripts %}
+    <script>
+        $("#submit").click(function () {
+            $.ajax({
+                url: "/network/accesslist_product/",
+                type: "GET",
+                data: {
+                    "device": $("#sel_device").val(),
+                    "originalIP": $('#originalIP').val(),
+                    "distinateIP": $('#distinateIP').val(),
+                    "port": $('#port').val(),
+                    "mask": $('#mask').val(),
+                    "csrfmiddlewaretoken": $('[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function (data) {
+                    var dataObj = JSON.parse(data);
+                    var originalIPError = dataObj["errors"]["originalIP"]
+                    var distinateIPError = dataObj["errors"]["distinateIP"]
+                    var portError = dataObj["errors"]["port"]
+                    var maskError = dataObj["errors"]["mask"]
+                    if (originalIPError) {
+                        $("#originalIPError").text(originalIPError + " 非法IP地址");
+                    } else {
+                        $("#originalIPError").text("");
+                    }
+                    if (distinateIPError) {
+                        $("#distinateIPError").text(distinateIPError + " 非法IP地址");
+                    } else {
+                        $("#distinateIPError").text("");
+                    }
+                    if (portError) {
+                        $("#portError").text(portError + " 非法端口号");
+                    } else {
+                        $("#portError").text("");
+                    }
+                    if (maskError) {
+                        $("#maskError").text(maskError + " 非法掩码地址");
+                    } else {
+                        $("#maskError").text("");
+                    }
+                    $("#result").html(dataObj["data"]);
+                }
+            })
+        });
+    </script>
+{% endblock %}
