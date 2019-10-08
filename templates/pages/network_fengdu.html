@@ -261,13 +261,13 @@
 {% block tail-scripts %}
     <script src="../../static/js/bootstrap-table.js"></script>
     <script>
-        {% comment %}setInterval(function () {
+       setInterval(function () {
             $('#fdquerybutton').click();
         }, 60*1000);
         setInterval(function () {
             $('#jfquerybutton').click();
         }, 1.9*60*1000);
-        setInterval(function () {
+       {% comment %}setInterval(function () {
             $('#szfdquerybutton').click();
         }, 1.3*60*1000);
         setInterval(function () {

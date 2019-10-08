@@ -14,7 +14,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 
 class CheckDevice:
-    def initVar(self):
+    def _initVar(self):
         '''
         初始化时间数值和其他相关参数，只能运行一次初始化一次，不然就会有问题！
         :return:
@@ -56,7 +56,7 @@ class CheckDevice:
         if os.path.exists(self.zipFile):
             os.remove(self.zipFile)
 
-    def initBroswer(self):
+    def _initBroswer(self):
         '''
         初始化无头浏览器
         :return:
@@ -82,14 +82,14 @@ class CheckDevice:
                    'infourl': ['/Orion/SummaryView.aspx?viewname=Current%20Top%2010%20Lists', 'Orion/Logout.aspx']}
         }
 
-    def check(self):
+    def _check(self):
         '''
         设备巡检
         :return: 返回巡检失败的主机
         '''
         failedList = []
         try:
-            self.initBroswer()
+            self._initBroswer()
         except Exception as e:
             print('[ERROR] Init browser failed.%s' % e)
             self.browser.quit()
@@ -125,7 +125,7 @@ class CheckDevice:
         self.browser.quit()
         return failedList
 
-    def report(self):
+    def _report(self):
         '''
         生成报告
         :return:返回是否生成报告成功
@@ -147,7 +147,7 @@ class CheckDevice:
             print('[ERROR] Product report %s failed. %s' % (self.reportFileName, e))
             return False
 
-    def compress(self):
+    def _compress(self):
         '''
         加密压缩报告
         :return: 返回是否压缩成功
@@ -167,7 +167,7 @@ class CheckDevice:
             print(e)
             return False
 
-    def send(self):
+    def _send(self):
         '''
         发送邮件
         :return: 返回是否发送成功
@@ -203,20 +203,20 @@ class CheckDevice:
             print('[ERROR] Send email encounter en error. %s' % e)
             return False
 
-    def program(self):
-        self.initVar()
+    def _program(self):
+        self._initVar()
         time.sleep(random.randint(0, 1) * 60)
-        result = self.check()
+        result = self._check()
         if result:  # 巡检失败
             return result
         time.sleep(random.randint(0, 3) * 60)
-        if not self.report():  # 生成报告失败
+        if not self._report():  # 生成报告失败
             return 'Gener report failed.'
         time.sleep(random.randint(0, 3) * 60)
-        if not self.compress():  # 压缩文件失败
+        if not self._compress():  # 压缩文件失败
             return 'Compress cipher zip file failed'
         time.sleep(random.randint(0, 3) * 60)
-        if not self.send():  # 发送邮件失败
+        if not self._send():  # 发送邮件失败
             return 'Send email encounter error'
         return 'success'
 
@@ -226,7 +226,7 @@ class CheckDevice:
         :return:
         '''
         for i in range(3):
-            if not self.program() == 'success':
+            if not self._program() == 'success':
                 time.sleep(1 * 60)
             else:
                 break

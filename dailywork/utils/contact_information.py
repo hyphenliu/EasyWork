@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import urllib, re, json, time, random
 from http import cookiejar
-from urllib import request
+from urllib import request, parse
 from collections import defaultdict
 from dailywork.utils.phone import Phone
 
@@ -35,7 +35,7 @@ class OA:
             'token': paramsDict['token']
         }
         self.loginUrl = 'http://sso.%s/sso/login' % self.domain
-        self.postData = urllib.parse.urlencode(self.post).encode('utf-8')
+        self.postData = parse.urlencode(self.post).encode('utf-8')
         self.cookie = cookiejar.LWPCookieJar()
         self.cookieHandler = request.HTTPCookieProcessor(self.cookie)
         self.opener = request.build_opener(self.cookieHandler, request.HTTPHandler)

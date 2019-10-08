@@ -147,10 +147,11 @@
 {% block tail-scripts %}
     <script src="../../static/js/bootstrap-table.js"></script>
     <script>
-        {% comment %}setInterval(function () {
+        setInterval(function () {
             $('#pcquerybutton').click();
             $('#bzquerybutton').click();
-        }, 1 * 60 * 1000);{% endcomment %}
+        }, 1 * 60 * 1000);
+        {% comment %}{% endcomment %}
 
         $(function () {
 

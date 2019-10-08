@@ -19,7 +19,7 @@ from inventory.utils import database_ops as assets_dbops
 #     sched = BackgroundScheduler()
 #     sched.add_jobstore(DjangoJobStore(), 'default')
 #
-#     @register_job(sched, 'interval', seconds=10, start_date='2019-06-25 00:00:20', end_date='2019-07-03 00:00:03')
+#     @register_job(sched, 'interval', seconds=10, start_date='2019-09-19 00:00:20', end_date='2019-10-10 00:00:03')
 #     def extractFeixin():
 #         updateDatabase()
 #     #

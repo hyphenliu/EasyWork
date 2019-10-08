@@ -47,7 +47,7 @@ def _getHeadLine(sheet_content):
     for sl in access_list:
         result[sl] = -1
     row_num = -1
-    m_cells = sheet_content.merged_cells
+    m_cells = sheet_content.merged_cells  # 获取所有的合并单元格，以供后面判断
     print(m_cells)
     # 找到首行
     for row in sheet_content.rows:
@@ -70,7 +70,8 @@ def _getHeadLine(sheet_content):
     # 找到字段对应的列
     result['row_num'] = row_num
     for cell in sheet_content[row_num]:
-
+        print(cell.column)
+        print(cell.row)
         cv = _cellValue(cell)
         cv = re.sub(r'\s', '', cv)
         if not isinstance(cv, str) or not cv:
@@ -545,7 +546,7 @@ def readXlsContent(tableName, filename):
             # 处理每一列的信息，将字典值转化为列表值，处理端口信息
             item_list, err_msg = _sortItem(item_dict)
             error_msg += err_msg
-            # 每一行，只要出现错误信息就不添加到正确结果中
+            # 每一行，只要出现错误信息就不添加到最终结果中
             if error_msg.strip():
                 error_msg = '第[{0:^{1}d}]行数据错误：{2}'.format(row, len(str(nrows)), error_msg)
                 errors.append(error_msg)
