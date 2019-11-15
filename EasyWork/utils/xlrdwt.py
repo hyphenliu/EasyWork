@@ -4,7 +4,7 @@ from xlrd.xldate import xldate_as_datetime
 import datetime
 import re
 import copy
-from inventory.utils import database_ops
+from EasyWork.utils import database_ops
 
 
 def readXlsQueryContent(filename):

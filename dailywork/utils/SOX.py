@@ -11,7 +11,7 @@ import datetime
 from django.core.cache import cache
 from openpyxl import Workbook, load_workbook
 from EasyWork.settings import DOWNLOAD_DIRS
-from dailywork.utils.database_ops import *
+from EasyWork.utils.database_ops import *
 
 sox_list = ['stand_point', 'province_point', 'area', 'procedure', 'sub_procedure', 'control_goal',
             'standard_describe', 'company_describe', 'frequency', 'control_type', 'control_method', 'department_list',

@@ -1,8 +1,8 @@
 import time, os, re, sqlite3
 from collections import defaultdict
 
-from .database_ops import *
-from .data_struct import *
+from EasyWork.utils.database_ops import *
+from EasyWork.utils.data_struct import *
 
 
 class FeiXin:

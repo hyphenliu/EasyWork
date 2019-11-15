@@ -6,8 +6,8 @@ from datetime import datetime, date
 from collections import defaultdict, Counter
 from django.core.cache import cache
 from openpyxl import Workbook, load_workbook
-from networkops.utils.database_ops import *
-from networkops.utils.data_struct import *
+from EasyWork.utils.database_ops import *
+from EasyWork.utils.data_struct import *
 
 access_list = ['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
                'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']

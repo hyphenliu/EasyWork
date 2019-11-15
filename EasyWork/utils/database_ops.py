@@ -6,9 +6,9 @@
 @Date  : 2019/11/14 16:38
 @Desc  : 
 '''
-from django.db.models import Q, Count, Sum
-from .data_struct import *
-from inventory.utils.xlrdwt import *
+from django.db.models import Q, Count
+from EasyWork.utils.data_struct import *
+from EasyWork.utils.xlrdwt import *
 from functools import reduce
 import operator
 
@@ -65,6 +65,7 @@ def importDatabase(tableName, datas, dropTable=False, dropTime=False):
         print(e)
         return False
 
+
 def insertBulk(tableName, datas):
     """
     已经配对好的数据插入到数据库中
@@ -93,7 +94,6 @@ def addSingle(tableName, data):
         model.objects.create(**data)
     except Exception as e:
         print('[DB ERROR] insert %s failed. %s' % (data, e))
-
 
 
 def updateBulk(tableName, datas, column):
@@ -164,6 +164,7 @@ def getAllForColumns(tableName, columns):
 
     return result
 
+
 def getAllForColumns(tableName, columns, order_column='id'):
     '''
     返回指定N个字段，以资产标签为key，value为指定字段
@@ -188,7 +189,9 @@ def getAll(tableName):
     :param tableName:
     :return:
     '''
-    return tableClass[tableName].objects.all().order_by('asset_label')
+    if tableName in ['erp', 'schedual', 'inventoried', 'inventory', 'prescap', 'scraped']:
+        return tableClass[tableName].objects.all().order_by('asset_label')
+    return tableClass[tableName].objects.all()
 
 
 def getDoubleData(tableName, columnNames, columnValues):
@@ -199,28 +202,31 @@ def getDoubleData(tableName, columnNames, columnValues):
     :param columnValues:需要查询的值列表
     :return:
     '''
-    if 'asset_label' in columnNames:  # 需要同时查询历史资产标签号
-        cIndex = columnNames.index('asset_label')
-        cv1 = columnValues[cIndex]
-        columnNames.remove('asset_label')
-        columnValues.remove(cv1)
-        if tableName == 'erp':
-            resultSets = tableClass[tableName].objects.filter(
-                Q(**{'asset_label__icontains': cv1}) | Q(**{'early_label__icontains': cv1}),
-                Q(**{columnNames[0] + '__icontains': columnValues[0]})).order_by('asset_label')
-        elif tableName == 'schedual':
-            resultSets = tableClass[tableName].objects.filter(
-                Q(**{'asset_label__icontains': cv1}) | Q(**{'note__icontains': cv1}),
-                Q(**{columnNames[0] + '__icontains': columnValues[0]})).order_by('asset_label')
+    if tableName in ['erp', 'schedual', 'inventoried', 'inventory', 'prescap', 'scraped']:
+        if 'asset_label' in columnNames:  # 需要同时查询历史资产标签号
+            cIndex = columnNames.index('asset_label')
+            cv1 = columnValues[cIndex]
+            columnNames.remove('asset_label')
+            columnValues.remove(cv1)
+            if tableName == 'erp':
+                resultSets = tableClass[tableName].objects.filter(
+                    Q(**{'asset_label__icontains': cv1}) | Q(**{'early_label__icontains': cv1}),
+                    Q(**{columnNames[0] + '__icontains': columnValues[0]})).order_by('asset_label')
+            elif tableName == 'schedual':
+                resultSets = tableClass[tableName].objects.filter(
+                    Q(**{'asset_label__icontains': cv1}) | Q(**{'note__icontains': cv1}),
+                    Q(**{columnNames[0] + '__icontains': columnValues[0]})).order_by('asset_label')
+            else:
+                resultSets = tableClass[tableName].objects.filter(Q(**{'asset_label__icontains': cv1}),
+                                                                  Q(**{columnNames[0] + '__icontains': columnValues[
+                                                                      0]})).order_by('asset_label')
         else:
-            resultSets = tableClass[tableName].objects.filter(Q(**{'asset_label__icontains': cv1}),
-                                                              Q(**{columnNames[0] + '__icontains': columnValues[
-                                                                  0]})).order_by(
-                'asset_label')
+            resultSets = tableClass[tableName].objects.filter(Q(**{columnNames[0] + '__icontains': columnValues[0]}),
+                                                              Q(**{columnNames[1] + '__icontains': columnValues[
+                                                                  1]})).order_by('asset_label')
     else:
         resultSets = tableClass[tableName].objects.filter(Q(**{columnNames[0] + '__icontains': columnValues[0]}),
-                                                          Q(**{columnNames[1] + '__icontains': columnValues[
-                                                              1]})).order_by('asset_label')
+                                                          Q(**{columnNames[1] + '__icontains': columnValues[1]}))
     return resultSets
 
 
@@ -252,21 +258,24 @@ def getSingleData(tableName, columnName, columnValue):
     :param columnValues:字段值
     :return:
     '''
-    if 'asset_label' == columnName:  # 需要同时查询历史资产标签号
-        if tableName == 'erp':
-            resultSets = tableClass['erp'].objects.filter(
-                Q(**{'asset_label__icontains': columnValue}) | Q(**{'early_label__icontains': columnValue})).order_by(
-                'asset_label')
-        elif tableName == 'schedual':
-            resultSets = tableClass[tableName].objects.filter(
-                Q(**{'asset_label__icontains': columnValue}) | Q(**{'note__icontains': columnValue})).order_by(
-                'asset_label')
+    if tableName in ['erp', 'schedual', 'inventoried', 'inventory', 'prescap', 'scraped']:
+        if 'asset_label' == columnName:  # 需要同时查询历史资产标签号
+            if tableName == 'erp':
+                resultSets = tableClass['erp'].objects.filter(
+                    Q(**{'asset_label__icontains': columnValue}) | Q(
+                        **{'early_label__icontains': columnValue})).order_by('asset_label')
+            elif tableName == 'schedual':
+                resultSets = tableClass[tableName].objects.filter(
+                    Q(**{'asset_label__icontains': columnValue}) | Q(**{'note__icontains': columnValue})).order_by(
+                    'asset_label')
+            else:
+                resultSets = tableClass[tableName].objects.filter(**{'asset_label__icontains': columnValue}).order_by(
+                    'asset_label')
         else:
-            resultSets = tableClass[tableName].objects.filter(**{'asset_label__icontains': columnValue}).order_by(
+            resultSets = tableClass[tableName].objects.filter(**{columnName + '__icontains': columnValue}).order_by(
                 'asset_label')
     else:
-        resultSets = tableClass[tableName].objects.filter(**{columnName + '__icontains': columnValue}).order_by(
-            'asset_label')
+        resultSets = tableClass[tableName].objects.filter(**{columnName + '__icontains': columnValue})
 
     return resultSets
 

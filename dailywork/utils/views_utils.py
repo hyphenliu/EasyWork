@@ -1,55 +1,10 @@
-#from dailywork.utils.database_ops import *
+# from dailywork.utils.database_ops import *
 from django.core.cache import cache
 from random import randint
 import math
 import datetime
 
-from dailywork.utils.database_ops import *
-
-
-def simpleQuery(request, tablename):
-    columnNames = []
-    columnValues = []
-    simpleValue = []
-
-    if request.method == 'GET':
-        columnname1 = request.GET.get('columnname1', '').strip()
-        columnname2 = request.GET.get('columnname2', '').strip()
-        columnvalue1 = request.GET.get('columnvalue1', '').strip()
-        columnvalue2 = request.GET.get('columnvalue2', '').strip()
-
-        if columnname1 and columnvalue1:
-            columnNames.append(columnname1)
-            columnValues.append(columnvalue1)
-        elif columnvalue1 and not columnname1:
-            simpleValue.append(columnvalue1)
-        if columnname2 and columnvalue2:
-            columnNames.append(columnname2)
-            columnValues.append(columnvalue2)
-        elif columnvalue2 and not columnname2:
-            simpleValue.append(columnvalue2)
-
-    if len(columnNames) == 1:
-        dataList = getSingleData(tableName=tablename, columnName=columnNames[0], columnValue=columnValues[0]).values()
-    elif len(columnNames) == 2:
-        dataList = getDoubleData(tableName=tablename, columnNames=columnNames, columnValues=columnValues).values()
-    elif len(simpleValue) == 1:
-        dataList = getReSingleData(tableName=tablename, value=simpleValue[0]).values()
-    else:
-        dataList = getAll(tablename).values()
-
-    return dataList, '-'.join(columnValues)
-
-
-# def export2Xls(data, tablename, db=True):
-#     result = []
-#     columns = htmlColums[tablename]
-#     for dt in data:
-#         line = []
-#         for i in columns:
-#             line.append(dt[i])
-#         result.append(line)
-#     return result
+from EasyWork.utils.database_ops import *
 
 
 def taxiListGen(per_limit, total_limit, day_list):
@@ -132,5 +87,3 @@ def genLimit(per_limit, number=6):
         limit_list.append(final)
 
     return limit_list
-
-

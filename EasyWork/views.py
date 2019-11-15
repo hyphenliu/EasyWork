@@ -11,7 +11,6 @@ import time
 from .utils import *
 from networkops.utils.feixin_extract import updateDatabase
 from networkops.utils.devicecheck import CheckDevice
-from inventory.utils import database_ops as assets_dbops
 
 
 # try:
@@ -64,9 +63,9 @@ def downloadExcel(request, module, tableName):
         return
     if tableName == 'inventoried':
         if filename == '未盘点到资产下载':
-            data = assets_dbops.queryUninventoriedData()
+            data = queryUninventoriedData()
         elif filename == '盘点信息更新':
-            data = assets_dbops.filterInventoriedData()
+            data = filterInventoriedData()
     else:
         data = []
     response = HttpResponse(content_type='application/vnd.ms-excel')

@@ -7,7 +7,8 @@ import json
 # from EasyWork.utils.logger import logger
 from dailywork.utils.contact_information import OA
 from dailywork.utils.views_utils import *
-from dailywork.utils.data_struct import *
+from EasyWork.utils.views_utils import *
+from EasyWork.utils.data_struct import *
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
 

@@ -8,6 +8,7 @@ import json
 
 from networkops.utils.accesslist import *
 from networkops.utils.views_utils import *
+from EasyWork.utils.views_utils import *
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
 

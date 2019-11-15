@@ -5,7 +5,7 @@ import re, os, smtplib
 from django.conf import settings
 from Crypto.Cipher import AES
 
-from networkops.utils.database_ops import *
+from EasyWork.utils.database_ops import *
 
 
 def formatEmailAddr(address, sep=';'):
@@ -74,50 +74,6 @@ def checkEmail(mail_str, password):
 
 def extractHuwangInfo():
     pass
-
-
-def simpleQuery(request, tablename, prefix=''):
-    columnNames = []
-    columnValues = []
-    simpleValue = []
-
-    if request.method == 'GET':
-        columnname1 = request.GET.get('%scolumnname1' % prefix, '').strip()
-        columnname2 = request.GET.get('%scolumnname2' % prefix, '').strip()
-        columnvalue1 = request.GET.get('%scolumnvalue1' % prefix, '').strip()
-        columnvalue2 = request.GET.get('%scolumnvalue2' % prefix, '').strip()
-
-        if columnname1 and columnvalue1:
-            columnNames.append(columnname1)
-            columnValues.append(columnvalue1)
-        elif columnvalue1 and not columnname1:
-            simpleValue.append(columnvalue1)
-        if columnname2 and columnvalue2:
-            columnNames.append(columnname2)
-            columnValues.append(columnvalue2)
-        elif columnvalue2 and not columnname2:
-            simpleValue.append(columnvalue2)
-
-    if len(columnNames) == 1:
-        dataList = getSingleData(tableName=tablename, columnName=columnNames[0], columnValue=columnValues[0]).values()
-    elif len(columnNames) == 2:
-        dataList = getDoubleData(tableName=tablename, columnNames=columnNames, columnValues=columnValues).values()
-    elif len(simpleValue) == 1:
-        dataList = getReSingleData(tableName=tablename, value= simpleValue[0]).values()
-    else:
-        dataList = getAll(tablename).values()
-    return dataList, '-'.join(columnValues)
-
-
-# def export2Xls(data, tablename):
-#     result = []
-#     columns = htmlColums[tablename]
-#     for dt in data:
-#         line = []
-#         for i in columns:
-#             line.append(dt[i])
-#         result.append(line)
-#     return result
 
 
 def encrypt(passwd, text):

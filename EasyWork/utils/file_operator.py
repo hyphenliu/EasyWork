@@ -10,42 +10,13 @@ from django.core.cache import cache
 from io import BytesIO
 import os, xlwt
 from datetime import datetime, date
+from EasyWork.utils.database_ops import *
+from EasyWork.utils.xlrdwt import *
 
-from inventory.utils.data_struct import tableClass as InventModelClass
-from inventory.utils.data_struct import htmlTitles as InventHmtlTitles
-from inventory.utils.data_struct import htmlColums as InventHtmlColumns
-from inventory.utils.data_struct import tableTitles as InventTableTitles
-from inventory.utils.data_struct import tableColums as InventTableColumns
-from inventory.utils.data_struct import fileNames as InventFileNames
-from networkops.utils.data_struct import tableClass as NetworkModelClass
-from networkops.utils.data_struct import htmlTitles as NetworkHtmlTitles
-from networkops.utils.data_struct import htmlColums as NetworkHtmlColumns
-from networkops.utils.data_struct import tableTitles as NetworkTableTitles
-from networkops.utils.data_struct import fileNames as NetworkFileNames
-from networkops.utils.data_struct import tableColums as NetworkTableColumns
-from dailywork.utils.data_struct import tableClass as DailyworkModelClass
-from dailywork.utils.data_struct import htmlTitles as DailyworkHtmlTitles
-from dailywork.utils.data_struct import htmlColums as DailyworkHtmlColumns
-from dailywork.utils.data_struct import tableTitles as DailyworkTableTitles
-from dailywork.utils.data_struct import fileNames as DailyworkFileNames
-from dailywork.utils.data_struct import tableColums as DailyworkTableColumns
-
-from inventory.utils import database_ops as asset_dbops
-from dailywork.utils import database_ops as daily_dbops
-from networkops.utils import database_ops as network_dbops
 from dailywork.utils import SOX
 from networkops.utils import accesslist
 
-MODULE_DICT = {
-    'assets': {'model_class': InventModelClass, 'html_titles': InventHmtlTitles, 'html_columns': InventHtmlColumns,
-               'table_titles': InventTableTitles, 'table_columns': InventTableColumns, 'file_names': InventFileNames},
-    'network': {'model_class': NetworkModelClass, 'html_titles': NetworkHtmlTitles, 'html_columns': NetworkHtmlColumns,
-                'table_titles': NetworkTableTitles, 'table_columns': NetworkTableColumns,
-                'file_names': NetworkFileNames},
-    'dailywork': {'model_class': DailyworkModelClass, 'html_titles': DailyworkHtmlTitles,
-                  'html_columns': DailyworkHtmlColumns, 'table_titles': DailyworkTableTitles,
-                  'table_columns': DailyworkTableColumns, 'file_names': DailyworkFileNames}
-}
+
 
 
 def readFile(filename, chunkSize=512):
@@ -59,7 +30,7 @@ def readFile(filename, chunkSize=512):
                 break
 
 
-def dealErpImportFile(filePath, tableName, fileName, tableTitles):
+def dealErpImportFile(filePath, tableName, fileName):
     '''
     处理ERP导入的数据
     :param filePath:
@@ -76,18 +47,18 @@ def dealErpImportFile(filePath, tableName, fileName, tableTitles):
         return
     if tableName == 'inventoried':
         titleList = tableTitles['inventory']
-    fileData = asset_dbops.readXlsContent(filePath, titleList, fileName)
+    fileData = readXlsContent(filePath, titleList, fileName)
     os.remove(filePath)
     if not fileData:
         print('没有读取到excel表格数据，请确认是按照模版填写数据')
         return
     if tableName == 'erp' or tableName == 'erpsoft':
-        fileData = asset_dbops.completeErpInformation(fileData)
+        fileData = completeErpInformation(fileData)
     elif tableName == 'inventoried':
-        fileData = asset_dbops.complteInventoriedInformation(fileData)
+        fileData = complteInventoriedInformation(fileData)
     elif tableName == 'schedual':
-        fileData = asset_dbops.comleteSchedualInformation(fileData)
-    return asset_dbops.importDatabase(tableName, fileData, dropTable=dropTable)
+        fileData = comleteSchedualInformation(fileData)
+    return importDatabase(tableName, fileData, dropTable=dropTable)
 
 
 def dealDailyworkImportFile(filePath, tableName, fileName):
@@ -101,7 +72,7 @@ def dealDailyworkImportFile(filePath, tableName, fileName):
     if tableName == 'sox':
         # {'origin':[[],...],'matrix':{{},...}}
         fileData = SOX.getXlsContent(tableName, filePath, department='基础平台')
-        return daily_dbops.importDatabase(tableName, fileData)
+        return importDatabase(tableName, fileData)
 
 
 def dealNetworkImportFile(filePath, tableName, fileName):
@@ -116,14 +87,14 @@ def dealNetworkImportFile(filePath, tableName, fileName):
     if tableName == 'accesslist':
         fileData, msg = accesslist.readXlsContent(tableName, filePath)
         cache.set('pageShowOn{}'.format(tableName), msg, 5 * 60)
-        return network_dbops.importDatabase(tableName, fileData, dropTable=True)
+        return importDatabase(tableName, fileData, dropTable=True)
     elif tableName == 'ipmapping':
         result, msg = accesslist.importIPMappingXls(tableName, filePath)
         cache.set('pageShowOn{}'.format(tableName), msg, 5 * 60)
         return result
 
 
-def dealErpQueryFile(filePath, tableName, htmlColums):
+def dealErpQueryFile(filePath, tableName):
     '''
     处理ERP批量查询文件
     :param filePath:
@@ -133,14 +104,14 @@ def dealErpQueryFile(filePath, tableName, htmlColums):
     :return:
     '''
     result = []
-    queryList = asset_dbops.readXlsQueryContent(filePath)
+    queryList = readXlsQueryContent(filePath)
     if not queryList:
         print('没有读取到excel表格数据，请确认是按照模版填写数据')
         cache.set('batchQueryStatus', '', 60)
         return False
     columns = htmlColums[tableName]
     for ql in queryList:  # 逐条查询
-        items = asset_dbops.getSingleData(tableName, 'asset_label', ql)
+        items = getSingleData(tableName, 'asset_label', ql)
         if items:
             for item in items.values():
                 line = []
@@ -155,7 +126,7 @@ def dealErpQueryFile(filePath, tableName, htmlColums):
     return result
 
 
-def dealDailyworkQueryFile(filePath, tableName, htmlColums):
+def dealDailyworkQueryFile(filePath, tableName):
     '''
     处理日常工作批量查询文件
     :param filePath:
@@ -175,11 +146,9 @@ def dealUploadFile(module, filePath, tableName, action, fileName):
     :return:
     '''
     dropTable = True
-    tableTitles = MODULE_DICT[module]['table_titles']
-    htmlColums = MODULE_DICT[module]['html_columns']
     if action == 'import':
         if module == 'assets':
-            return dealErpImportFile(filePath, tableName, fileName, tableTitles)
+            return dealErpImportFile(filePath, tableName, fileName)
         elif module == 'dailywork':
             return dealDailyworkImportFile(filePath, tableName, fileName)
         elif module == 'network':
@@ -188,9 +157,9 @@ def dealUploadFile(module, filePath, tableName, action, fileName):
     elif action == 'query':
         result = []
         if module == 'assets':
-            result = dealErpQueryFile(filePath, tableName, htmlColums)
+            result = dealErpQueryFile(filePath, tableName)
         if module == 'dailywork':
-            result = dealDailyworkQueryFile(filePath, tableName, htmlColums)
+            result = dealDailyworkQueryFile(filePath, tableName)
         cache.set('exportQuery{}2XlsContent'.format(tableName), result, 2 * 60)
         cache.set('exportQuery{}2XlsName'.format(tableName), tableName, 2 * 60)
         cache.set('batchQuery{}Status'.format(tableName), 'success', 60)
@@ -215,9 +184,8 @@ def responseXls(module, tableName, data, dataName):
     teal 0x15; teal_ega 0x15; turquoise 0x0F; violet 0x14; white 0x09; yellow 0x0D
     '''
     wb = xlwt.Workbook(encoding='utf-8')
-    file_names = MODULE_DICT[module]['file_names'][tableName]
+    file_names = fileNames[tableName]
     sheet = wb.add_sheet(file_names)
-    htmlTitles = MODULE_DICT[module]['html_titles']
     titles = htmlTitles[tableName]
     style_date = xlwt.XFStyle()
     style_date.num_format_str = 'yyyy-mm-dd'
@@ -299,7 +267,7 @@ def len_byte(value):
 def export2Xls(module, data, tablename, db=True):
     result = []
     if db:
-        columns = MODULE_DICT[module]['html_columns'][tablename]
+        columns = htmlColums[tablename]
         for dt in data:
             line = []
             for i in columns:

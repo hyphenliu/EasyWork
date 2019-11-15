@@ -82,7 +82,7 @@ class AssetsSchedual(models.Model):
     schedual_date = models.DateField('计划盘点时间', auto_now=True)
 
     class Meta:
-        # ordering = ['asset_label']
+        ordering = ['asset_label']
         verbose_name = '盘点清册'
         verbose_name_plural = '盘点清册'
 
@@ -99,7 +99,7 @@ class AssetsInventoried(models.Model):
     schedual_date = models.DateField('盘点时间', auto_now=True)
 
     class Meta:
-        # ordering = ['asset_label']
+        ordering = ['asset_label']
         verbose_name = '盘点清册'
         verbose_name_plural = '盘点清册'
 
@@ -118,7 +118,7 @@ class AssetsInventory(models.Model):
     inventory_date = models.DateField('盘点时间', auto_now=True)
 
     class Meta:
-        # ordering = ['machine_address', 'machine_room', 'machine_column', 'machine_racket']
+        ordering = ['machine_address', 'machine_room', 'machine_column', 'machine_racket']
         verbose_name = '盘点结果'
         verbose_name_plural = '盘点结果'
 
@@ -146,7 +146,7 @@ class AssetsPrescrap(models.Model):
     prescraped_date = models.DateField('拟报废时间', auto_now=True)
 
     class Meta:
-        # ordering = ['asset_label']
+        ordering = ['asset_label']
         verbose_name = '拟报废清单'
         verbose_name_plural = '拟报废清单'
 
@@ -160,6 +160,6 @@ class AssetsScraped(models.Model):
     staff_name = models.CharField('责任人', max_length=10, null=True)
 
     class Meta:
-        # ordering = ['asset_label']
+        ordering = ['asset_label']
         verbose_name = '已报废清单'
         verbose_name_plural = '已报废清单'
