@@ -35,7 +35,7 @@ def getXlsContent(tableName, filename, department='基础平台'):
     for sn in wb.sheetnames:  # 处理每个sheet
 
         print('sheet name:{0}'.format(sn))
-        ws = wb[sn]
+        ws = _unmergeCell(wb[sn])
         feature_cols = _getHeadLine(ws)
         if not feature_cols: continue
         ws_ori_result[sn] = []  # 保留原始表格sheet名
@@ -75,6 +75,35 @@ def getXlsContent(tableName, filename, department='基础平台'):
     # 写入原始数据到文件中，并在redis中提供下载刚刚生成的文件
     _writeContent(tableName, filename, ws_ori_result, department)
     return ws_result
+
+def _unmergeCell(sheet_content):
+    '''
+    拆分并填充合并单元格
+    :param sheet_content:
+    :return:
+    '''
+    m_cells = sheet_content.merged_cells.ranges
+    m_cells_dict = {}
+    for mc in m_cells:
+        cell_value = sheet_content.cell(row=mc.min_row, column=mc.min_col).value
+        m_cells_dict[mc.coord] = [mc, cell_value]
+    for k, v in m_cells_dict.items():
+        merge_all_list = []
+        sheet_content.unmerge_cells(k)
+        r1, r2, c1, c2 = v[0].min_row, v[0].max_row, v[0].min_col, v[0].max_col
+        if (r1 != r2 and c1 != c2):
+            row_col = [(x, y) for x in range(r1, r2 + 1) for y in range(c1, c2 + 1)]
+            merge_all_list.extend(row_col)
+        elif (r1 == r2 and c1 != c2):  # or (r1 != r2 and c1 == c2):
+            col = [(r1, n) for n in range(c1, c2 + 1)]
+            merge_all_list.extend(col)
+        elif (r1 != r2 and c1 == c2):
+            row = [(m, c1) for m in range(r1, r2 + 1)]
+            merge_all_list.extend(row)
+        for mal in merge_all_list:
+            sheet_content.cell(row=mal[0], column=mal[1]).value = v[1]
+
+    return sheet_content
 
 
 def _cellValue(cell):

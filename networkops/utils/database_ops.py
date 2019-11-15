@@ -1,5 +1,7 @@
 from django.db.models import Q, Count
 from networkops.utils.data_struct import *
+from functools import reduce
+import operator
 
 
 def countAll(tableName):
@@ -23,7 +25,7 @@ def countAggregateColumn(tableName, columnName, filterColumn, filterValue):
 #############################################################################
 def importDatabase(tableName, datas, dropTable=False):
     '''
-    批量导入到数据表中
+    批量导入到数据表中，区分传入数据的类型未字典还是列表
     :param tableName:
     :param datas:
     :param dropTable:
@@ -36,8 +38,11 @@ def importDatabase(tableName, datas, dropTable=False):
         model.objects.all().delete()
     if isinstance(datas, list):
         for data in datas:
-            lineDict = dict(zip(vars, data))
-            dataList.append(model(**lineDict))
+            if isinstance(data, list):
+                lineDict = dict(zip(vars, data))
+                dataList.append(model(**lineDict))
+            elif isinstance(data, dict):
+                dataList.append(model(**data))
     elif isinstance(datas, dict):
         for k, v in datas.items():
             dataList.append(model(**v))
@@ -66,6 +71,12 @@ def insertBulk(tableName, datas):
 
 
 def addSingle(tableName, data):
+    '''
+    data要为字典格式
+    :param tableName:
+    :param data:
+    :return:
+    '''
     model = tableClass[tableName]
     try:
         model.objects.create(**data)
@@ -74,18 +85,42 @@ def addSingle(tableName, data):
 
 
 def updateBulk(tableName, datas, column):
+    '''
+    根据表名和字段批量更新数据库，传入的必须是字典数据
+    :param tableName:
+    :param datas:
+    :param column: 指定列
+    :return:
+    '''
     model = tableClass[tableName]
     for data in datas:
-        item = model.objects.filter(Q(**{column + '__exact': data[column]}))
+        if isinstance(column, list):# 多个字段组合为唯一值
+            Q_filter = reduce(operator.and_, [Q(**{"{}__exact".format(x): data[x]}) for x in column])
+            item = model.objects.filter(Q_filter)
+        else:
+            item = model.objects.filter(Q(**{column + '__exact': data[column]}))
         try:
             item.update(**data)
         except Exception as e:
             print('[DB ERROR] update %s failed. %s' % (data, e))
+            return False
+    return True
 
 
 def updateSingle(tableName, data, column):
+    '''
+    单独更新，传入数据为字典格式
+    :param tableName:
+    :param data:
+    :param column:
+    :return:
+    '''
     model = tableClass[tableName]
-    item = model.objects.filter(Q(**{column + '__exact': data[column]}))
+    if isinstance(column, list):# 多个字段组合为唯一值
+        Q_filter = reduce(operator.and_, [Q(**{"{}__exact".format(x): data[x]}) for x in column])
+        item = model.objects.filter(Q_filter)
+    else:
+        item = model.objects.filter(Q(**{column + '__exact': data[column]}))
     try:
         item.update(**data)
     except Exception as e:
@@ -129,8 +164,7 @@ def getDoubleData(tableName, columnNames, columnValues):
     :return:
     '''
     resultSets = tableClass[tableName].objects.filter(Q(**{columnNames[0] + '__icontains': columnValues[0]}),
-                                                      Q(**{columnNames[1] + '__icontains': columnValues[
-                                                          1]}))
+                                                      Q(**{columnNames[1] + '__icontains': columnValues[1]}))
     return resultSets
 
 
@@ -155,3 +189,15 @@ def getSingleData(tableName, columnName, columnValue):
     '''
     resultSets = tableClass[tableName].objects.filter(**{columnName + '__icontains': columnValue})
     return resultSets
+
+def getReSingleData(tableName, value):
+     '''
+     获取包含某个值的结果，不限定字段，返回查找结果，结果可以是多条数据
+     :param tableName:
+     :param value:
+     :return:
+     '''
+     columns = htmlColums[tableName]
+     Q_filter = reduce(operator.or_, [Q(**{"{}__iregex".format(key): value}) for key in columns])
+     resultSets = tableClass[tableName].objects.filter(Q_filter)
+     return resultSets

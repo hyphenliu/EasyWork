@@ -16,15 +16,18 @@ from inventory.utils.data_struct import htmlTitles as InventHmtlTitles
 from inventory.utils.data_struct import htmlColums as InventHtmlColumns
 from inventory.utils.data_struct import tableTitles as InventTableTitles
 from inventory.utils.data_struct import tableColums as InventTableColumns
+from inventory.utils.data_struct import fileNames as InventFileNames
 from networkops.utils.data_struct import tableClass as NetworkModelClass
 from networkops.utils.data_struct import htmlTitles as NetworkHtmlTitles
 from networkops.utils.data_struct import htmlColums as NetworkHtmlColumns
 from networkops.utils.data_struct import tableTitles as NetworkTableTitles
+from networkops.utils.data_struct import fileNames as NetworkFileNames
 from networkops.utils.data_struct import tableColums as NetworkTableColumns
 from dailywork.utils.data_struct import tableClass as DailyworkModelClass
 from dailywork.utils.data_struct import htmlTitles as DailyworkHtmlTitles
 from dailywork.utils.data_struct import htmlColums as DailyworkHtmlColumns
 from dailywork.utils.data_struct import tableTitles as DailyworkTableTitles
+from dailywork.utils.data_struct import fileNames as DailyworkFileNames
 from dailywork.utils.data_struct import tableColums as DailyworkTableColumns
 
 from inventory.utils import database_ops as asset_dbops
@@ -35,12 +38,13 @@ from networkops.utils import accesslist
 
 MODULE_DICT = {
     'assets': {'model_class': InventModelClass, 'html_titles': InventHmtlTitles, 'html_columns': InventHtmlColumns,
-               'table_titles': InventTableTitles, 'table_columns': InventTableColumns},
+               'table_titles': InventTableTitles, 'table_columns': InventTableColumns, 'file_names': InventFileNames},
     'network': {'model_class': NetworkModelClass, 'html_titles': NetworkHtmlTitles, 'html_columns': NetworkHtmlColumns,
-                'table_titles': NetworkTableTitles, 'table_columns': NetworkTableColumns},
+                'table_titles': NetworkTableTitles, 'table_columns': NetworkTableColumns,
+                'file_names': NetworkFileNames},
     'dailywork': {'model_class': DailyworkModelClass, 'html_titles': DailyworkHtmlTitles,
-                  'html_columns': DailyworkHtmlColumns,
-                  'table_titles': DailyworkTableTitles, 'table_columns': DailyworkTableColumns}
+                  'html_columns': DailyworkHtmlColumns, 'table_titles': DailyworkTableTitles,
+                  'table_columns': DailyworkTableColumns, 'file_names': DailyworkFileNames}
 }
 
 
@@ -113,6 +117,10 @@ def dealNetworkImportFile(filePath, tableName, fileName):
         fileData, msg = accesslist.readXlsContent(tableName, filePath)
         cache.set('pageShowOn{}'.format(tableName), msg, 5 * 60)
         return network_dbops.importDatabase(tableName, fileData, dropTable=True)
+    elif tableName == 'ipmapping':
+        result, msg = accesslist.importIPMappingXls(tableName, filePath)
+        cache.set('pageShowOn{}'.format(tableName), msg, 5 * 60)
+        return result
 
 
 def dealErpQueryFile(filePath, tableName, htmlColums):
@@ -207,7 +215,8 @@ def responseXls(module, tableName, data, dataName):
     teal 0x15; teal_ega 0x15; turquoise 0x0F; violet 0x14; white 0x09; yellow 0x0D
     '''
     wb = xlwt.Workbook(encoding='utf-8')
-    sheet = wb.add_sheet(dataName)
+    file_names = MODULE_DICT[module]['file_names'][tableName]
+    sheet = wb.add_sheet(file_names)
     htmlTitles = MODULE_DICT[module]['html_titles']
     titles = htmlTitles[tableName]
     style_date = xlwt.XFStyle()
@@ -237,31 +246,41 @@ def responseXls(module, tableName, data, dataName):
                     """)
     # 确定栏位宽度
     col_width = []
+    # 先根据表头设定初始的列宽
     for i in range(len(titles)):
         sheet.write(0, i, titles[i], style_heading)
         col_width.append(len_byte(titles[i]))
-
+    # 读取数据并写入到excel文件中
     for r in range(len(data)):
         for c in range(len(data[r])):
-            if col_width[c] / 2 < len_byte(str(data[r][c])):
+            # SOX矩阵根据数据长度动态调整列宽
+            if tableName == 'sox' and col_width[c] / 2 < len_byte(str(data[r][c])):
                 col_width[c] = int((len_byte(data[r][c]) + r * col_width[c]) / (r + 1))
+            else:
+                col_width[c] = max(col_width[c], len_byte(str(data[r][c])))
             if isinstance(data[r][c], date):
                 sheet.write(r + 1, c, data[r][c], style_date)
             else:
                 sheet.write(r + 1, c, data[r][c], style_line)
-    # 设置栏位宽度，栏位宽度小于10时候采用默认宽度
-    for i in range(len(col_width)):
-        col_width[i] = int(col_width[i] * 1.2)
-        if col_width[i] >= 1 and col_width[i] < 30:
+    # 目前仅针对SOX的列宽调整，因为SOX矩阵的字数太长
+    if tableName == 'sox':
+        # 设置栏位宽度，栏位宽度小于10时候采用默认宽度
+        for i in range(len(col_width)):
+            col_width[i] = int(col_width[i] * 1.2)
+            if col_width[i] >= 1 and col_width[i] < 30:
+                sheet.col(i).width = 256 * (col_width[i] + 1)
+            elif col_width[i] >= 30 and col_width[i] < 80:
+                sheet.col(i).width = 256 * (int((col_width[i] - 30) / 3) + 31)
+            elif col_width[i] >= 80 and col_width[i] < 180:
+                sheet.col(i).width = 256 * (int((col_width[i] - 80) / 5) + 48)
+            elif col_width[i] >= 180 and col_width[i] <= 320:
+                sheet.col(i).width = 256 * (int((col_width[i] - 30) / 7) + 68)
+            elif col_width[i] > 320:
+                sheet.col(i).width = 256 * 90
+    else:
+        for i in range(len(col_width)):
+            col_width[i] = int(col_width[i])
             sheet.col(i).width = 256 * (col_width[i] + 1)
-        elif col_width[i] >= 30 and col_width[i] < 80:
-            sheet.col(i).width = 256 * (int((col_width[i] - 30) / 3) + 31)
-        elif col_width[i] >= 80 and col_width[i] < 180:
-            sheet.col(i).width = 256 * (int((col_width[i] - 80) / 5) + 48)
-        elif col_width[i] >= 180 and col_width[i] <= 320:
-            sheet.col(i).width = 256 * (int((col_width[i] - 30) / 7) + 68)
-        elif col_width[i] > 320:
-            sheet.col(i).width = 256 * 90
 
     output = BytesIO()
     wb.save(output)

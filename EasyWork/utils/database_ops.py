@@ -1,6 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+'''
+@File  : database_ops.py
+@Author: HP.Liew
+@Date  : 2019/11/14 16:38
+@Desc  : 
+'''
 from django.db.models import Q, Count, Sum
-from inventory.utils.data_struct import *
-from .xlrdwt import *
+from .data_struct import *
+from inventory.utils.xlrdwt import *
 from functools import reduce
 import operator
 
@@ -24,7 +32,7 @@ def countAggregateColumn(tableName, columnName, filterColumn, filterValue):
 
 
 ###############################################################################################
-def importDatabase(tableName, datas, dropTable=False):
+def importDatabase(tableName, datas, dropTable=False, dropTime=False):
     '''
     批量导入到数据表中，区分传入数据的类型未字典还是列表
     :param tableName:
@@ -37,6 +45,9 @@ def importDatabase(tableName, datas, dropTable=False):
     dataList = []
     if dropTable:  # 需要清空数据表
         model.objects.all().delete()
+    if dropTime:
+        today = datetime.date.today()
+        model.objects.filter(update=today).delete()
     if isinstance(datas, list):
         for data in datas:
             if isinstance(data, list):
@@ -54,10 +65,36 @@ def importDatabase(tableName, datas, dropTable=False):
         print(e)
         return False
 
+def insertBulk(tableName, datas):
+    """
+    已经配对好的数据插入到数据库中
+    :param tableName:
+    :param datas: [{k1:v1},{k2,v2}...]
+    """
+    model = tableClass[tableName]
+    datas = [model(**data) for data in datas]
+    try:
+        model.objects.bulk_create(datas)
+        return True
+    except Exception as e:
+        print(e)
+        return False
 
-# updateERPDepreciateDate()
-# getErpPrescrapData(endYear=2010, startYear=2011)
-# updateInventoried()
+
+def addSingle(tableName, data):
+    '''
+    data要为字典格式
+    :param tableName:
+    :param data:
+    :return:
+    '''
+    model = tableClass[tableName]
+    try:
+        model.objects.create(**data)
+    except Exception as e:
+        print('[DB ERROR] insert %s failed. %s' % (data, e))
+
+
 
 def updateBulk(tableName, datas, column):
     '''
@@ -120,6 +157,23 @@ def getAllForColumns(tableName, columns):
         index = 0
         columns.insert(0, 'asset_label')
 
+    columns = tuple(columns)
+    dataSets = tableClass[tableName].objects.all().values_list(*columns)
+    for ds in dataSets:
+        result[ds[index]] = ds
+
+    return result
+
+def getAllForColumns(tableName, columns, order_column='id'):
+    '''
+    返回指定N个字段，以资产标签为key，value为指定字段
+    :param tableName:数据表名
+    :param columns:需要的数据
+    :return:{asset_label:columns}
+    '''
+    result = {}
+    index = 0
+    columns.insert(0, order_column)
     columns = tuple(columns)
     dataSets = tableClass[tableName].objects.all().values_list(*columns)
     for ds in dataSets:
@@ -363,3 +417,7 @@ def updateERPDepreciateDate():
         obj = tableClass['erp'].objects.filter(id=ds['id'])
         obj.update(**ds)
     print('udpate erp deprecate finished!')
+
+# updateERPDepreciateDate()
+# getErpPrescrapData(endYear=2010, startYear=2011)
+# updateInventoried()

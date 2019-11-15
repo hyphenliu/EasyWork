@@ -118,9 +118,11 @@ def exportExcel(request, module, tableName):
     dateStr = time.strftime('_%Y%m%d-%H%M%S', time.localtime(time.time()))
     response = HttpResponse(content_type='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment;fileName="{0}.xls"'.format(urlquote(tableName + dateStr))
-    output = responseXls(module, tableName, data, dataName)
-    response.write(output.getvalue())
+    if data:
+        output = responseXls(module, tableName, data, dataName)
+        response.write(output.getvalue())
     return response
+
 
 
 @login_required

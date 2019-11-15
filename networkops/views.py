@@ -36,7 +36,14 @@ def accesslist(request):
     msg = cache.get('pageShowOn{}'.format('accesslist'), '')  # 获取处理结果，如错误信息，告警信息
     return render(request, 'pages/network_accesslist.html',
                   {'titles': access_list_title, 'msg': msg, 'uploadsuccess': uploadStatus})
-
+@login_required
+def ipmapping(request):
+    ip_list_title = zip(htmlTitles['ipmapping'], htmlColums['ipmapping'])
+    pat_list_title = zip(htmlTitles['ippatmapping'], htmlColums['ippatmapping'])
+    uploadStatus = cache.get('download{0}{1}file'.format('network', 'ipmapping'))
+    msg = cache.get('pageShowOn{}'.format('ipmapping'), '')  # 获取处理结果，如错误信息，告警信息
+    return render(request, 'pages/network_ipmapping.html',
+                  {'iptitles': ip_list_title, 'pattitles':pat_list_title ,'msg': msg, 'uploadsuccess': uploadStatus})
 
 @login_required
 def ipCheck(request):
@@ -148,6 +155,10 @@ def listpage(request, tablename):
         prefix = 'szjf'
     elif tablename == 'baozhang':
         prefix = 'bz'
+    elif tablename == 'ipmapping':
+        prefix = 'ip'
+    elif tablename == 'ippatmapping':
+        prefix = 'pat'
     else:
         prefix = ''
     if request.method == 'GET':

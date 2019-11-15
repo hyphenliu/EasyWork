@@ -1,9 +1,13 @@
 import os
-import IPy
+from ipaddress import *
 import re
+import socket
 from datetime import datetime, date
+from collections import defaultdict, Counter
 from django.core.cache import cache
 from openpyxl import Workbook, load_workbook
+from networkops.utils.database_ops import *
+from networkops.utils.data_struct import *
 
 access_list = ['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
                'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']
@@ -15,8 +19,9 @@ hq_list = ['信息港', '南方基地', '深圳', 'ucenter', '集团', '哈池',
 
 
 def _isIp(address):
+    address = address.strip()
     try:
-        IPy.IP(address)
+        ip_address(address)
         return True
     except Exception as e:
         return False
@@ -26,7 +31,7 @@ def _cellValue(cell):
     if not cell.value:
         return ''
     if isinstance(cell.value, str):
-        return cell.value.replace('\n', ' ')
+        return cell.value.replace('\n', ' ').strip()
     if isinstance(cell.value, datetime):
         return cell.value.strftime('%Y%m%d')
     if isinstance(cell.value, int):
@@ -38,7 +43,7 @@ def _getHeadLine(sheet_content):
     '''
     返回字段所在的行/列号，没有找到的字段列号为-1
     :param sheet_content:
-    :return: result{access_list:column_num}
+    :return: result{access_list_item:column_num}
     '''
 
     result = {}
@@ -48,7 +53,6 @@ def _getHeadLine(sheet_content):
         result[sl] = -1
     row_num = -1
     m_cells = sheet_content.merged_cells  # 获取所有的合并单元格，以供后面判断
-    print(m_cells)
     # 找到首行
     for row in sheet_content.rows:
         count = 0
@@ -126,6 +130,98 @@ def _getHeadLine(sheet_content):
         warning += '【{}】解析失败； '.format(', '.join(unresoled))
     print('[WARNING]', warning)
     return result, warning
+
+
+def readXlsContent(tableName, filename):
+    '''
+    读取excel表格内容，获取网络策略开通单的表头，提取表头对应列的数据
+    :param filename:
+    :return:data=[['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
+                    'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']......],
+            msg_dict={'error':'','warning':''} # HTML格式的字符串
+    '''
+    print('处理文件：{}'.format(filename))
+    data = []
+    message = ''
+    warning_msgs = []
+    error_msgs = []
+    wb = load_workbook(filename, data_only=True)
+    sheet_list = wb.sheetnames
+    for sheet_name in sheet_list:
+        errors = []  # 存储检查本表单发现的错误信息
+        sheet = wb[sheet_name]
+        sheet_name = sheet.title
+        print('处理表单：{0}'.format(sheet_name))
+        head_index, warning = _getHeadLine(sheet)
+        if not head_index:
+            continue
+        # print(head_index)
+        nrows = sheet.max_row
+        start_row = head_index['row_num'] + 1
+        head_index.pop('row_num')
+        if nrows < start_row + 1:
+            print('{0}表格内容为空，请检查！'.format(sheet.title))
+            return
+        # 一行一行处理,最后将每一行的所有错误信息汇总
+        for row in range(start_row + 1, nrows + 1):
+            if not ''.join([_cellValue(c) for c in sheet[row]]): continue
+            item_dict = {}  # 记录每一列的信息,生成键值对
+            error_msg = []  # 记录每一行的错误信息
+            transport_protocal_tcp = sheet.cell(row=row, column=head_index['transport_protocal_tcp']).value
+            transport_protocal_udp = sheet.cell(row=row, column=head_index['transport_protocal_udp']).value
+            for k, v in head_index.items():
+                if v < 0:  # 字段没有找到
+                    item_dict[k] = ''
+                    continue
+                err_msg = ''
+                cell_value = _cellValue(sheet.cell(row=row, column=v))  # 提取单元格内容
+                if 'IP' in k:
+                    IP_list, err_msg = _extractIP(cell_value, access_feature[access_list.index(k)])
+                    item_dict[k] = '\n'.join(IP_list)
+                elif '_port' in k:
+                    port_dict, err_msg = _extractPort(k, cell_value, transport_protocal_tcp, transport_protocal_udp)
+                    if isinstance(port_dict, dict):
+                        for i, j in port_dict.items():
+                            port_dict[i] = '\n'.join(str(n) for n in j)
+                        item_dict[k] = port_dict
+                    else:
+                        item_dict[k] = '\n'.join(str(i) for i in port_dict)
+                elif k == 'direction':  # 提取访问方向信息
+                    acc_list, err_msg = _extractProvince(cell_value, access_feature[access_list.index(k)])
+                    item_dict[k] = acc_list
+                else:
+                    item_dict[k] = cell_value
+                # 去除重复的错误
+                if not (err_msg.strip() in error_msg):
+                    error_msg.append(err_msg.strip())
+            # 汇总错误信息
+            error_msg = ''.join(error_msg)
+            # 处理每一列的信息，将字典值转化为列表值，处理端口信息
+            item_list, err_msg = _sortItem(item_dict)
+            error_msg += err_msg
+            # 每一行，只要出现错误信息就不添加到最终结果中
+            if error_msg.strip():
+                error_msg = '第[{0:^{1}d}]行数据错误：{2}'.format(row, len(str(nrows)), error_msg)
+                errors.append(error_msg)
+                # print(error_msg)
+            else:
+                for il in item_list:
+                    data.append(il)
+        if warning:  # 合并告警信息
+            warning_msgs.append('表单<b>《{}》</b>存在的告警信息：'.format(sheet_name))
+            warning_msgs.append(warning)
+        if errors:  # 合并错误信息
+            error_msgs.append('表单<b>《{}》</b>存在的错误信息：'.format(sheet_name))
+            error_msgs.extend(errors)
+    # print(data, {'warning': warning_msgs, 'errors': error_msgs})
+    if warning_msgs:
+        message += '<div style="background:#FF0">{}</div>'.format(
+            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]))
+    if error_msgs:
+        message += '<div style="color:#F00">{}</div>'.format(''.join(['<p>{}</p>'.format(i) for i in error_msgs]))
+    # 写入原始数据到文件中，并在redis中提供下载刚刚生成的文件
+    # _writeContent(tableName, filename, data)
+    return data, message
 
 
 def _extractIP(cell_content, column_name):
@@ -481,96 +577,6 @@ def _sortItem(item_dict):
     return items, error_msg
 
 
-def readXlsContent(tableName, filename):
-    '''
-    读取excel表格内容，获取网络策略开通单的表头，提取表头对应列的数据
-    :param filename:
-    :return:data=[['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
-                    'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']......],
-            msg_dict={'error':'','warning':''} # HTML格式的字符串
-    '''
-    print('处理文件：{}'.format(filename))
-    data = []
-    message = ''
-    warning_msgs = []
-    error_msgs = []
-    wb = load_workbook(filename, data_only=True)
-    sheet_list = wb.sheetnames
-    for sheet_name in sheet_list:
-        errors = []  # 存储检查本表单发现的错误信息
-        sheet = wb[sheet_name]
-        sheet_name = sheet.title
-        print('处理表单：{0}'.format(sheet_name))
-        head_index, warning = _getHeadLine(sheet)
-        if not head_index:
-            continue
-        # print(head_index)
-        nrows = sheet.max_row
-        start_row = head_index['row_num'] + 1
-        head_index.pop('row_num')
-        if nrows < start_row + 1:
-            print('{0}表格内容为空，请检查！'.format(sheet.title))
-            return
-        for row in range(start_row + 1, nrows + 1):
-            if not ''.join([_cellValue(c) for c in sheet[row]]): continue
-            item_dict = {}  # 记录每一列的信息
-            error_msg = []  # 记录每一行的错误信息
-            transport_protocal_tcp = sheet.cell(row=row, column=head_index['transport_protocal_tcp']).value
-            transport_protocal_udp = sheet.cell(row=row, column=head_index['transport_protocal_udp']).value
-            for k, v in head_index.items():
-                if v < 0:
-                    item_dict[k] = ''
-                    continue
-                err_msg = ''
-                cell_value = _cellValue(sheet.cell(row=row, column=v))
-                if 'IP' in k:
-                    IP_list, err_msg = _extractIP(cell_value, access_feature[access_list.index(k)])
-                    item_dict[k] = '\n'.join(IP_list)
-                elif '_port' in k:
-                    port_dict, err_msg = _extractPort(k, cell_value, transport_protocal_tcp, transport_protocal_udp)
-                    if isinstance(port_dict, dict):
-                        for i, j in port_dict.items():
-                            port_dict[i] = '\n'.join(str(n) for n in j)
-                        item_dict[k] = port_dict
-                    else:
-                        item_dict[k] = '\n'.join(str(i) for i in port_dict)
-                elif k == 'direction':  # 提取访问方向信息
-                    acc_list, err_msg = _extractProvince(cell_value, access_feature[access_list.index(k)])
-                    item_dict[k] = acc_list
-                else:
-                    item_dict[k] = cell_value
-                # 去除重复的错误
-                if not (err_msg.strip() in error_msg):
-                    error_msg.append(err_msg.strip())
-            error_msg = ''.join(error_msg)
-            # 处理每一列的信息，将字典值转化为列表值，处理端口信息
-            item_list, err_msg = _sortItem(item_dict)
-            error_msg += err_msg
-            # 每一行，只要出现错误信息就不添加到最终结果中
-            if error_msg.strip():
-                error_msg = '第[{0:^{1}d}]行数据错误：{2}'.format(row, len(str(nrows)), error_msg)
-                errors.append(error_msg)
-                # print(error_msg)
-            else:
-                for il in item_list:
-                    data.append(il)
-        if warning:  # 合并告警信息
-            warning_msgs.append('表单<b>《{}》</b>存在的告警信息：'.format(sheet_name))
-            warning_msgs.append(warning)
-        if errors:  # 合并错误信息
-            error_msgs.append('表单<b>《{}》</b>存在的错误信息：'.format(sheet_name))
-            error_msgs.extend(errors)
-    # print(data, {'warning': warning_msgs, 'errors': error_msgs})
-    if warning_msgs:
-        message += '<div style="background:#FF0">{}</div>'.format(
-            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]))
-    if error_msgs:
-        message += '<div style="color:#F00">{}</div>'.format(''.join(['<p>{}</p>'.format(i) for i in error_msgs]))
-    # 写入原始数据到文件中，并在redis中提供下载刚刚生成的文件
-    # _writeContent(tableName, filename, data)
-    return data, message
-
-
 def _writeContent(tableName, filename, data):
     '''
     生成网络策略开通文件
@@ -594,6 +600,386 @@ def _writeContent(tableName, filename, data):
     wb.save(filename)
     wb.close()
     cache.set('download{0}{1}file'.format('dailywork', tableName), filename, 1 * 60)
+
+
+def importIPMappingXls(tableName, filename):
+    '''
+    读取表格数据并入库
+    :param tableName:
+    :param filename:
+    :return: 入库结果和返回的HTML错误信息
+    '''
+    print('处理CZW IP文件：{}'.format(filename))
+    datas = defaultdict(dict)
+    message = ''
+    warning_msgs = []
+    error_msgs = []
+    wb = load_workbook(filename, data_only=True)
+    sheet_list = wb.sheetnames
+    for sheet_name in sheet_list:
+        data = []
+        errors = []  # 存储检查本表单发现的错误信息
+        warnings = []  # 存储检查本表单发现的异常信息
+        province = ''
+        province_flag = False  # 判断表单是否含有省份名称
+        pat_flag = False  # 判断表单是否为PAT表单
+        head_flag = False  # 判断是否为表单表头
+        sheet = wb[sheet_name]
+        sheet_name = sheet.title
+        # 判断表名是否为省公司名称
+        for pl in province_list:
+            if pl in sheet_name:
+                province = pl
+                province_flag = True
+        if not province_flag:
+            print('表单【{}】的省份名字出现问题，请检查后再导入'.format(sheet_name))
+            error_msgs.append('表单【{}】的省份名字出现问题，请检查后再导入'.format(sheet_name))
+            return messages, datas
+
+        # 判断表是否为PAT/NAT表
+        if 'pat' in sheet_name.lower():
+            pat_flag = True
+        # 处理表单内容
+        # 拆分并填充合并单元格
+        sheet = _unmergeCell(sheet)
+        for row in sheet.rows:
+            cell_values = [_cellValue(c) for c in row]
+            # 处理表单第一步：需要确认表单表头内容，但不记录表头元素所在的列
+            if '地址' in '|'.join(cell_values):  # 排除第一行
+                head_flag = True
+                continue
+            if not head_flag:  # 没有找到表单表头则跳过
+                continue
+            # 处理单行内容
+            # 判断IP地址是否合法，格式化元素，返回信息：
+            #       PAT表：  错误信息，[源地址，源端口，目的地址，目的端口，类型，网络号，'']
+            #       非PAT表： 错误信息，[源地址，目的地址，系统]
+            error_msg, warning_msg, items = _mappingRowItems(cell_values, pat_flag)
+            if error_msg:
+                errors.append(error_msg)
+                continue
+            if warning_msg: warnings.append(warning_msg)
+            data.append(items)
+        if pat_flag:
+            datas[province]['PAT'] = data
+        else:
+            datas[province]['SINGLE'] = data
+        if errors: error_msgs.append('处理表单【{}】存在非法错误：\n\t{}'.format(sheet_name, '\n\t'.join(errors)))
+        if warnings: warning_msgs.append('处理表单【{}】时，发现需要注意的事项：\n\t{}'.format(sheet_name, '\n\t'.join(warnings)))
+    for province, data in datas.items():
+        errors = []
+        warnings = []
+        s_error, s_data = _provinceContinueIPComplete(data['SINGLE'])
+        if s_error: errors.append(s_error)
+        p_error, p_warning, s_data, p_data = _provinceItemInfoCompelte(s_data, data['PAT'])
+        if p_error: errors.append(p_error)
+        if p_warning: warnings.append(p_warning)
+        if errors: error_msgs.append('处理省份【{}】省份存在错误\n\t{}'.format(province, '\n\t'.join(errors)))
+        if warnings: warning_msgs.append('处理省份【{}】时，发现需要注意的事项\n\t{}'.format(province, '\n\t'.join(warnings)))
+        # 更新最终结果
+        datas[province]['SINGLE'] = s_data
+        datas[province]['PAT'] = p_data
+
+    db_result = _dbOps(datas)
+    if warning_msgs:
+        message += '<div style="background:#FF0">{}</div>'.format(
+            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]).replace('\t', '&nbsp').replace('\n', '</p><p>'))
+    if error_msgs:
+        message += '<div style="color:#F00">{}</div>'.format(
+            ''.join(['<p>{}</p>'.format(i) for i in error_msgs]).replace('\t', '&nbsp').replace('\n', '</p><p>'))
+
+    return db_result, message
+
+
+def _dbOps(datas):
+    '''
+    数据入库操作
+    :param datas:{province:{'SINGLE':[], 'PAT':[]}, ...}
+    :return:
+    '''
+    m_import_result, m_update_result, p_import_result, p_update_result = False, False, False, False
+
+    ip_mapping = []
+    ip_pat_mapping = []
+    ip_db_col = tableColums['ipmapping']
+    pat_db_col = tableColums['ippatmapping']
+    # 组织数据
+    for province, v in datas.items():
+        pat = v['PAT']
+        for item in pat:
+            item.insert(0, province)
+            ip_pat_mapping.append(dict(zip(pat_db_col, item)))
+        single = v['SINGLE']
+        for item in single:
+            item.insert(0, province)
+            ip_mapping.append(dict(zip(ip_db_col, item)))
+
+    db_ip_mapping = getAll('ipmapping')
+    db_ip_pat_mapping = getAll('ippatmapping')
+    if not db_ip_mapping:
+        print('import to ipmapping table')
+        m_import_result = importDatabase('ipmapping', ip_mapping)
+    else:
+        print('update to ipmapping table')
+        m_update_result = updateBulk('ipmapping', ip_mapping, 'source_ip')
+
+    if not db_ip_pat_mapping:
+        print('import to ippatmapping table')
+        p_import_result = importDatabase('ippatmapping', ip_pat_mapping)
+    else:
+        print('update to ippatmapping table')
+        p_update_result = updateBulk('ippatmapping', ip_pat_mapping,
+                                     ['source_ip', 'source_port', 'dest_ip', 'dest_port'])
+
+    for i in [m_import_result, m_update_result, p_import_result, p_update_result]:
+        if not i:
+            return False
+
+
+def _patContinueIPComplete(ip_item, split_tag='-'):
+    '''
+    补全连续IP地址
+    :param ip_item:
+    :param split_tag:
+    :return:
+    '''
+    result = []
+    start_ip, end_ip = ip_item.split(split_tag)
+    ip_networks = [ipaddr for ipaddr in summarize_address_range(IPv4Address(start_ip), IPv4Address(end_ip))]
+    for ip_network in ip_networks:
+        result.extend([str(ipaddr) for ipaddr in IPv4Network(ip_network)])
+    return result
+
+
+def _provinceItemInfoCompelte(s_data, p_data):
+    '''
+    根据PAT表填充非PAT表，合并PAT表中已经存在的项
+    :param s_data: 非PAT表： [源地址，目的地址，系统]
+    :param p_data: PAT表：   [源地址，源端口，目的地址，目的端口，类型，网络号，'']
+    :return:    s_data, p_data:
+    '''
+    errors = []
+    warnings = []
+    p_dict = {}
+    contained_ip = {}  # 存储网络号所含的IP地址
+
+    s_ip_list = [ip[0] for ip in s_data]
+    p_ip_list = [ip[0] for ip in p_data]
+    for pil in set(p_ip_list):
+        ip_list = []
+        system = ''
+        # 处理连续PAT地址
+        if '-' in pil:
+            ip_list = _patContinueIPComplete(pil)
+        else:
+            ip_list.append(pil)
+        for il in ip_list:
+            if not il in s_ip_list:
+                errors.append('{}的PAT源地址不存在'.format(pil))
+                break
+            # 填充PAT信息
+            map_ip = s_data[s_ip_list.index(il)][1]
+            if map_ip == 'PAT':  # 分类正确，不处理
+                continue
+            elif map_ip:  # 分类被占用
+                warnings.append('{} 的PAT映射地址被 {} 占用'.format(il, map_ip))
+            else:  # 未分类，填充分类内容
+                s_data[s_ip_list.index(il)][1] = 'PAT'
+            # 填充PAT表系统信息
+            if not system:
+                system = s_data[s_ip_list.index(il)][2]
+            # 连续地址对应的系统名称不一致
+            elif not system == s_data[s_ip_list.index(il)][2]:
+                warnings.append('连续PAT IP地址中存在对应不同系统的情况')
+        for index, item in enumerate(p_data):
+            if pil == item[0]:
+                p_data[index][-1] = system
+    # 以源IP地址为键，建立字典
+    for item in p_data:
+        if item[0] in p_dict:
+            p_dict[item[0]].append(item[1:])
+        else:
+            p_dict[item[0]] = [item[1:]]
+    for src_ip, values in p_dict.items():
+        # 提取包含多个IP地址的网络号
+        net_works = [ip[-2] for ip in values if '/' in ip[-2] and '/32' not in ip[-2]]
+        if not net_works: continue
+        ip_list = sorted([ip[1] for ip in values], key=socket.inet_aton)
+        # 判断地址是否在包含多地址的网络号中
+        for net_work in net_works:
+            for ip in ip_list:
+                if IPv4Address(ip) in IPv4Network(net_work):
+                    # 找出非网络号的IP地址
+                    if not ip == net_work.split('/')[0]:
+                        if not net_work in contained_ip:
+                            contained_ip[net_work] = [(ip, src_ip), ]
+                        else:
+                            contained_ip[net_work].append((ip, src_ip))
+    # 删除被包含的IP地址信息
+    dup_items = []
+    for k, v in contained_ip.items():
+        warnings.append('{} 被包含在 {} 中'.format('、'.join([i[0] for i in v]), k))
+        for ip in v:
+            dup_items.extend([item for item in p_data if item[0] == ip[1] and item[2] == ip[0]])
+    [p_data.remove(di) for di in dup_items]
+    # 去除PAT源地址和映射地址组合值为重复的
+    combine_list = [(item[0], item[1], item[2], item[3]) for item in p_data]
+    duplicate_ip = [item for item, count in Counter(combine_list).items() if count > 1]
+    if duplicate_ip:
+        for di in duplicate_ip:
+            warnings.append('源地址{}源端口{}映射地址{}映射端口{}'.format(di[0], di[1], di[2], di[3]))
+
+    return '；\n\t'.join(errors), '；\n\t'.join(warnings), s_data, p_data
+
+
+def _provinceContinueIPComplete(ip_data):
+    '''
+    根据现有省公司地址，提取前24位网络地址，并补全后面的IP地址
+    不能对PAT表的ip地址去重
+    :param province_ip_data: 含源地址、映射地址、系统名称的信息 [[src_ip, map_ip, system]...]
+    :return:
+    '''
+    result = []
+    error = ''
+    dips = []  # 重复IP地址
+    # 找到网络号
+    ip_networks = set(['.'.join(ip[0].split('.')[:3]) + '.0/24' for ip in ip_data])
+    ip_list = [d[0] for d in ip_data]
+    duplicate_ip = [item for item, count in Counter(ip_list).items() if count > 1]
+    if duplicate_ip:
+        for dip in duplicate_ip:
+            if ip_data[ip_list.index(dip)][1]:
+                dips.append(dip)
+    if dips:
+        error = error + '存在重复IP地址{}'.format(','.join(dips))
+        return error, result
+
+    for ip_network in ip_networks:
+        for ip in IPv4Network(ip_network):
+            ip = str(ip)
+            if ip in ip_list:
+                result.append(ip_data[ip_list.index(ip)])
+            else:
+                result.append([ip, '', ''])
+    return error, result
+
+
+def _IPPortCheck(port):
+    '''
+    判断端口号是否合法
+    :param port:
+    :return:
+    '''
+    if not (isinstance(port, int) or isinstance(port, str)):
+        return False
+    if isinstance(port, str):
+        port = port.strip()
+    if not port:
+        return False
+    try:
+        port = int(port)
+    except:
+        return False
+    if port < 1 or port > 65535:
+        return False
+    return True
+
+
+def _mappingRowItems(cell_values, pat_flag):
+    '''
+    判断一行数据中的IP地址/IP端口是否合法，若是PAT还需生成映射地址网络号xxx.xxx.xxx.xxx/xx
+    :param cell_values:
+    :param pat_flag:
+    :return: PAT表：   错误信息，[源地址，源端口，目的地址，目的端口，类型，网络号，'']
+             非PAT表： 错误信息，[源地址，目的地址，系统]
+    '''
+    errors = []
+    warnings = []
+    src_ip = cell_values[0]
+    src_port = ''
+    map_port = ''
+    ip_network = ''
+    type = ''
+    system = ''
+    if pat_flag:
+        src_port = cell_values[1]
+        map_ip = cell_values[2]
+        map_port = cell_values[3]
+        type = cell_values[4].upper()
+    else:
+        map_ip = cell_values[1]
+        system = cell_values[2]
+    if not src_ip:
+        return '源地址为空', warnings, ['', '', '']
+    if '-' in src_ip:
+        start_ip, end_ip = src_ip.split('-')
+        if not _isIp(start_ip) or not _isIp(end_ip):
+            errors.append('源地址 {} 不合法'.format(src_ip))
+    elif (not _isIp(src_ip)) or src_ip.startswith('255.'):
+        errors.append('源地址 {} 不合法'.format(src_ip))
+
+    if pat_flag:  # PAT表单处理
+        if (not _isIp(map_ip)) or map_ip.startswith('255.'):
+            errors.append('映射地址 {} 不合法'.format(map_ip))
+        if src_port and not _IPPortCheck(src_port):
+            errors.append('源端口号 {} 不合法'.format(src_port))
+        if map_port:
+            if map_port.startswith('255.'):  # 计算网络号
+                ip_network = str(IPv4Network('{}/{}'.format(cell_values[2], cell_values[3])))
+                if not type == 'PAT': warnings.append('{} 类型应为PAT'.format(map_ip))
+                if int(ip_network.split('/')[1]) <= 24: warnings.append('单一地址 {} 分配过多映射地址'.format(map_ip))
+                type = 'PAT'
+            elif not _IPPortCheck(map_port):
+                errors.append('映射端口号 {} 不合法'.format(map_port))
+            else:
+                if not type == 'NAT': warnings.append('{} 类型应为NAT'.format(map_ip))
+                type = 'NAT'
+        else:
+            errors.append('映射端口号 {} 不能为空'.format(map_port))
+    else:  # 普通表单处理
+        if map_ip and not map_ip.upper() == 'PAT' and (
+                not _isIp(map_ip) or map_ip.startswith('255.') or map_ip.endswith('.0')):
+            errors.append('映射地址 {} 不合法'.format(map_ip))
+        # 网络号不允许分配映射地址
+        if src_ip.endswith('.0') and map_ip:
+            errors.append('源地址为网络号，但存在映射地址 {} '.format(map_ip))
+    if errors:  # 格式化错误信息
+        errors = 'IP地址/端口[ {} ]'.format(', '.join(errors))
+    if warnings:  # 格式化错误信息
+        warnings = 'IP地址/端口[ {} ]'.format(', '.join(warnings))
+    if pat_flag:
+        return errors, warnings, [src_ip, src_port, map_ip, map_port, type, ip_network, '']
+    return errors, warnings, [src_ip, map_ip, system]
+
+
+def _unmergeCell(sheet_content):
+    '''
+    拆分并填充合并单元格
+    :param sheet_content:
+    :return:
+    '''
+    m_cells = sheet_content.merged_cells.ranges
+    m_cells_dict = {}
+    for mc in m_cells:
+        cell_value = sheet_content.cell(row=mc.min_row, column=mc.min_col).value
+        m_cells_dict[mc.coord] = [mc, cell_value]
+    for k, v in m_cells_dict.items():
+        merge_all_list = []
+        sheet_content.unmerge_cells(k)
+        r1, r2, c1, c2 = v[0].min_row, v[0].max_row, v[0].min_col, v[0].max_col
+        if (r1 != r2 and c1 != c2):
+            row_col = [(x, y) for x in range(r1, r2 + 1) for y in range(c1, c2 + 1)]
+            merge_all_list.extend(row_col)
+        elif (r1 == r2 and c1 != c2):  # or (r1 != r2 and c1 == c2):
+            col = [(r1, n) for n in range(c1, c2 + 1)]
+            merge_all_list.extend(col)
+        elif (r1 != r2 and c1 == c2):
+            row = [(m, c1) for m in range(r1, r2 + 1)]
+            merge_all_list.extend(row)
+        for mal in merge_all_list:
+            sheet_content.cell(row=mal[0], column=mal[1]).value = v[1]
+
+    return sheet_content
 
 
 def complateAccessList(device, originalIP, mask, distinateIP, port):
@@ -635,3 +1021,5 @@ def complateAccessList(device, originalIP, mask, distinateIP, port):
                 accesslist_str = '请选择厂商'
             data = data + '<p>' + accesslist_str + '</p>'
     return data, errors
+
+# importIPMappingXls('', r'D:\Documents\2Desktop\基础平台部\04 网络日常工作\承载网1105.xlsx')

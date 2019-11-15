@@ -2,6 +2,8 @@ from django.db.models import Q, Count, Sum
 import datetime
 from dailywork.utils.data_struct import *
 from .xlrdwt import *
+from functools import reduce
+import operator
 
 def importDatabase(tableName, datas, dropTable=False, dropTime=False):
     '''
@@ -24,8 +26,11 @@ def importDatabase(tableName, datas, dropTable=False, dropTime=False):
             dataList.append(model(**v))
     elif isinstance(datas, list):
         for data in datas:
-            lineDict = dict(zip(vars, data))
-            dataList.append(model(**lineDict))
+            if isinstance(data, list):
+                lineDict = dict(zip(vars, data))
+                dataList.append(model(**lineDict))
+            elif isinstance(data, dict):
+                dataList.append(model(**data))
     try:
         model.objects.bulk_create(dataList)
         return True
@@ -33,7 +38,47 @@ def importDatabase(tableName, datas, dropTable=False, dropTime=False):
         print(e)
         return False
 
+def updateBulk(tableName, datas, column):
+    '''
+    根据表名和字段批量更新数据库，传入的必须是字典数据
+    :param tableName:
+    :param datas:
+    :param column: 指定列
+    :return:
+    '''
+    model = tableClass[tableName]
+    for data in datas:
+        if isinstance(column, list):# 多个字段组合为唯一值
+            Q_filter = reduce(operator.and_, [Q(**{"{}__exact".format(x): data[x]}) for x in column])
+            item = model.objects.filter(Q_filter)
+        else:
+            item = model.objects.filter(Q(**{column + '__exact': data[column]}))
+        try:
+            item.update(**data)
+        except Exception as e:
+            print('[DB ERROR] update %s failed. %s' % (data, e))
+            return False
+    return True
 
+
+def updateSingle(tableName, data, column):
+    '''
+    单独更新，传入数据为字典格式
+    :param tableName:
+    :param data:
+    :param column:
+    :return:
+    '''
+    model = tableClass[tableName]
+    if isinstance(column, list):# 多个字段组合为唯一值
+        Q_filter = reduce(operator.and_, [Q(**{"{}__exact".format(x): data[x]}) for x in column])
+        item = model.objects.filter(Q_filter)
+    else:
+        item = model.objects.filter(Q(**{column + '__exact': data[column]}))
+    try:
+        item.update(**data)
+    except Exception as e:
+        print('[DB ERROR] update %s failed. %s' % (data, e))
 #################################################################################
 def getAll(tableName):
     '''
@@ -81,4 +126,16 @@ def getSingleData(tableName, columnName, columnValue):
 
     resultSets = tableClass[tableName].objects.filter(**{columnName + '__icontains': columnValue})
 
+    return resultSets
+
+def getReSingleData(tableName, value):
+    '''
+    获取包含某个值的结果，不限定字段，返回查找结果，结果可以是多条数据
+    :param tableName:
+    :param value:
+    :return:
+    '''
+    columns = htmlColums[tableName]
+    Q_filter = reduce(operator.or_, [Q(**{"{}__iregex".format(key): value}) for key in columns])
+    resultSets = tableClass[tableName].objects.filter(Q_filter)
     return resultSets

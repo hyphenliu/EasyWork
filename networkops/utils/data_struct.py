@@ -2,7 +2,8 @@ from networkops.models import *
 
 # 数据库表
 tableClass = {'fengdu': Fengdu, 'jiefeng': Jiefeng, 'paicha': PaiCha, 'jichufd': Jichufd, 'jichujf': Jichujf,
-              'iplist': IPList, 'baozhang': Baozhang, 'accesslist': AccessList}
+              'iplist': IPList, 'baozhang': Baozhang, 'accesslist': AccessList, 'ippatmapping': IPPATMapping,
+              'ipmapping': IPMapping}
 tableColums = {
     'fengdu': ['serial_number', 'income_time', 'number_time', 'resource', 'ip_list', 'reason', 'excutor', 'outcome',
                'outcome_time', 'note'],
@@ -14,7 +15,9 @@ tableColums = {
     'baozhang': ['reason', 'ip_source', 'ip_dest', 'income_time', 'resource', 'level'],
     'iplist': ['ip', 'location', 'belong', 'type', 'note'],
     'accesslist': ['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
-                   'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']
+                   'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain'],
+    'ippatmapping': ['province', 'source_ip', 'source_port', 'dest_ip', 'dest_port', 'ip_type', 'net_work', 'system'],
+    'ipmapping': ['province', 'source_ip', 'dest_ip', 'system']
 }
 
 tableTitles = {
@@ -26,7 +29,9 @@ tableTitles = {
     'baozhang': ['告警内容', '源IP', '目的IP', '告警时间', '告警来源', '告警级别'],
     'iplist': ['IP地址', '位置', '归属', '黑白名单', '备注'],
     'accesslist': ['访问方向', '源地址', '源地址对应的映射IP', '源端口', '目的地址', '目的地址对应的映射IP', '目的端口', '传输层协议', '应用层协议', '策略用途',
-                   '接入IP承载网所属VPN域']
+                   '接入IP承载网所属VPN域'],
+    'ippatmapping': ['省份', '源地址', '源端口', '映射地址', '映射端口', '类型', '网络号', '系统'],
+    'ipmapping': ['省份', '源地址', '映射地址', '系统'],
 }
 
 htmlTitles = {
@@ -38,7 +43,9 @@ htmlTitles = {
     'baozhang': ['告警内容', '源IP', '目的IP', '告警时间', '告警来源', '告警级别'],
     'iplist': ['IP地址', '位置', '归属', '黑白名单', '备注'],
     'accesslist': ['访问方向', '源地址', '源地址对应的映射IP', '源端口', '目的地址', '目的地址对应的映射IP', '目的端口', '传输层协议', '应用层协议', '策略用途',
-                   '接入IP承载网所属VPN域']
+                   '接入IP承载网所属VPN域'],
+    'ippatmapping': ['省份', '源地址', '源端口', '映射地址', '映射端口', '类型', '网络号', '系统'],
+    'ipmapping': ['省份', '源地址', '映射地址', '系统'],
 }
 
 htmlColums = {
@@ -53,7 +60,9 @@ htmlColums = {
     'baozhang': ['reason', 'ip_source', 'ip_dest', 'income_time', 'resource', 'level'],
     'iplist': ['ip', 'location', 'belong', 'type', 'note'],
     'accesslist': ['direction', 'source_IP', 'source_map_IP', 'source_port', 'dest_IP', 'dest_map_IP', 'dest_port',
-                   'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain']
+                   'transport_protocal', 'app_protocal', 'access_use', 'vpn_domain'],
+    'ippatmapping': ['province', 'source_ip', 'source_port', 'dest_ip', 'dest_port', 'ip_type', 'net_work', 'system'],
+    'ipmapping': ['province', 'source_ip', 'dest_ip', 'system'],
 }
 
 fileNames = {
@@ -64,4 +73,6 @@ fileNames = {
     'jichujf': '深圳解封',
     'iplist': 'IP名单',
     'accesslist': '网络策略开通',
+    'ippatmapping': 'PAT映射表',
+    'ipmapping': 'CZW映射表',
 }

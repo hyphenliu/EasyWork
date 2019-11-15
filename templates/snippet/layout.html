@@ -42,8 +42,13 @@
                             <span class="fa arrow"></span>
                         </a>
                         <ul class="nav nav-second-level">
+                            {% if user.is_superuser %}
+                                <li><a href="/network/accesslist">网络策略生成（批量）</a></li>
+                                <li><a href="/network/ipmapping">CZW基础信息</a></li>
+                                <li><a href="/network/iplist">内部IP地址查询</a></li>
+                                <li><a href="/network/devicecheck">设备巡检</a></li>
+                            {% endif %}
                             <li><a href="/network/access_list">网络策略生成（逐条）</a></li>
-                            <li><a href="/network/accesslist">网络策略生成（批量）</a></li>
                             <li>
                                 <a href="#">HW行动 <span class="fa arrow"></span></a>
                                 <ul class="nav nav-third-level">
@@ -55,12 +60,6 @@
                                     </li>
                                 </ul>
                             </li>
-                            {% if user.is_superuser %}
-                                <li>
-                                    <a href="/network/iplist">内部IP地址查询</a>
-                                </li>
-                                <li><a href="/network/devicecheck">设备巡检</a></li>
-                            {% endif %}
                         </ul>
                     </li>
                 {% endif %}

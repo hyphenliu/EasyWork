@@ -94,7 +94,6 @@ def listpage(request, tablename):
         offset = request.GET.get('offset')
 
     dataList, queryStr = simpleQuery(request, tablename)
-
     cache.set('export{}2XlsContent'.format(tablename), export2Xls('dailywork',dataList, tablename), 60)
     cache.set('export{}2XlsName'.format(tablename), tablename + '-' + queryStr, 60)
 

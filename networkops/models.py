@@ -139,4 +139,33 @@ class AccessList(models.Model):
         ordering = ('-update', 'source_IP')
         verbose_name = '网络策略'
         verbose_name_plural = '网络策略'
-        unique_together=('source_IP','dest_IP','dest_port')
+        unique_together = ('source_IP', 'dest_IP', 'dest_port')
+
+
+class IPPATMapping(models.Model):
+    province = models.CharField(max_length=50, null=False, verbose_name='省份')
+    source_ip = models.CharField(max_length=50, null=False, verbose_name='源IP地址')
+    source_port = models.CharField(max_length=50, verbose_name='源端口')
+    dest_ip = models.GenericIPAddressField(verbose_name='映射地址')
+    dest_port = models.CharField(max_length=50, verbose_name='映射端口')
+    ip_type = models.CharField(max_length=20, verbose_name='IP类型')
+    net_work = models.CharField(max_length=20, verbose_name='网络地址')
+    system = models.CharField(max_length=20, verbose_name='系统')
+
+    class Meta:
+        ordering = ('source_ip', 'dest_ip')
+        unique_together = ('source_ip', 'source_port', 'dest_ip', 'dest_port')
+        verbose_name = 'PAT映射表'
+        verbose_name_plural = 'PAT映射表'
+
+
+class IPMapping(models.Model):
+    province = models.CharField(max_length=50, null=False, verbose_name='省份')
+    source_ip = models.GenericIPAddressField(verbose_name='源IP地址')
+    dest_ip = models.CharField(max_length=20, verbose_name='映射地址')
+    system = models.CharField(max_length=20, verbose_name='系统')
+
+    class Meta:
+        ordering = ('source_ip', 'dest_ip')
+        verbose_name = '映射表'
+        verbose_name_plural = '映射表'

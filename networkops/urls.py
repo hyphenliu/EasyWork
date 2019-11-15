@@ -5,6 +5,7 @@ from .views import *
 urlpatterns = [
     path('access_list/', access_list, name='access_list'),
     path('accesslist/', accesslist, name='accesslist'),
+    path('ipmapping/', ipmapping, name='ipmapping'),
     path('access_list_product/', access_list_product, name='access_list_product'),
     path('devicecheck/', devicecheck, name='devicecheck'),
     path('devicecheck_ajax/', devicecheck_ajax, name='devicecheck_ajax'),

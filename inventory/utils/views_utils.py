@@ -12,23 +12,32 @@ def intervalQuery(request):
 def simpleQuery(request, tablename):
     columnNames = []
     columnValues = []
+    simpleValue = []
+
     if request.method == 'GET':
-        columnname1 = request.GET.get('columnname1').strip()
-        columnname2 = request.GET.get('columnname2').strip()
-        columnvalue1 = request.GET.get('columnvalue1').strip()
-        columnvalue2 = request.GET.get('columnvalue2').strip()
+        columnname1 = request.GET.get('columnname1','').strip()
+        columnname2 = request.GET.get('columnname2','').strip()
+        columnvalue1 = request.GET.get('columnvalue1','').strip()
+        columnvalue2 = request.GET.get('columnvalue2','').strip()
 
         if columnname1 and columnvalue1:
             columnNames.append(columnname1)
             columnValues.append(columnvalue1)
+        elif columnvalue1 and not columnname1:
+            simpleValue.append(columnvalue1)
         if columnname2 and columnvalue2:
             columnNames.append(columnname2)
             columnValues.append(columnvalue2)
+        elif columnvalue2 and not columnname2:
+            simpleValue.append(columnvalue2)
+
 
     if len(columnNames) == 1:
         dataList = getSingleData(tableName=tablename, columnName=columnNames[0], columnValue=columnValues[0]).values()
     elif len(columnNames) == 2:
         dataList = getDoubleData(tableName=tablename, columnNames=columnNames, columnValues=columnValues).values()
+    elif len(simpleValue) == 1:
+        dataList = getReSingleData(tableName=tablename, value= simpleValue[0]).values()
     else:
         dataList = getAll(tablename).values()
 
