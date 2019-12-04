@@ -29,12 +29,15 @@ def getXlsContent(tableName, filename, department='基础平台'):
     :return: {'省控制点编号':{'字段':字段值,...}}
     '''
     ws_result = {}
+    warning_msgs = []
     ws_ori_result = {}  # 保存原始信息
-    staff_dict = _getContactList(department)
-    wb = load_workbook(filename, read_only=True, data_only=True)
+    staff_dict = _getContactList(department)  # {name/(IT): phone}
+    # wb = load_workbook(filename, read_only=True, data_only=True)
+    wb = load_workbook(filename)
     for sn in wb.sheetnames:  # 处理每个sheet
 
         print('sheet name:{0}'.format(sn))
+        # ws = wb[sn]
         ws = _unmergeCell(wb[sn])
         feature_cols = _getHeadLine(ws)
         if not feature_cols: continue
@@ -53,28 +56,39 @@ def getXlsContent(tableName, filename, department='基础平台'):
             # 提取部门员工，未含本部门员工则跳过
             staff_cell = ws.cell(row=row, column=feature_cols['duty']).value
             if not staff_cell: continue
+            # 提取责任人
             staff_list = _extractContactor(staff_cell, staff_dict)
             if not staff_list: continue
-
             department_cell = ws.cell(row=row, column=feature_cols['department_list']).value
-            # 提取可能存在问题的信息
-            if not _departmentFilter(department_cell, staff_cell): staff_list = '[注意]' + staff_list
             for k, v in feature_cols.items():
                 if v < 0:
                     item[k] = '未提取到'
                     continue
                 item[k] = _cellValue(ws.cell(row=row, column=v))
+            # 提取可能存在问题的信息
+            if not _departmentFilter(department_cell, staff_cell):
+                warning_msgs.append(item['stand_point'] + ": " + staff_list)
+                continue
             item['duty'] = staff_cell
             item['staff'] = staff_list
-            if not item['province_point'] in ws_result:  # 不重复控制点
+            if item['province_point'].strip():
+                point = item['province_point']
+            else:
+                point = item['stand_point']
+            if point and not point in ws_result:  # 不重复控制点
                 # 提取本门控制点原始信息
                 o_list = [_cellValue(c) for c in ws[row]]
                 o_list.insert(1, staff_list)  # 插入部门联系人信息
                 ws_ori_result[sn].append(o_list)
-                ws_result[item['province_point']] = item
+                ws_result[point] = item
     # 写入原始数据到文件中，并在redis中提供下载刚刚生成的文件
     _writeContent(tableName, filename, ws_ori_result, department)
-    return ws_result
+    if warning_msgs:
+        print(warning_msgs)
+        warning = '<div style="background:#FF0"><p>控制点存在责任人部门信息异常：</p>{}</div>'.format(''.join(['<p>{}</p>'.format(i) for i in warning_msgs]))
+        return ws_result, warning
+    return ws_result, ''
+
 
 def _unmergeCell(sheet_content):
     '''
@@ -134,7 +148,9 @@ def _getHeadLine(sheet_content):
     for row in sheet_content.rows:
         count = 0
         cell_values = '|'.join([_cellValue(c) for c in row])
-        cell_values = cell_values.replace('\n', '').strip('|')
+        # 删除换行符
+        # cell_values = cell_values.replace('\n', '').strip('|')
+        cell_values = re.sub(r'\s', '', cell_values).strip('|')
         for sf in sox_feature:
             if sf in cell_values: count += 1
         if count > len(sox_feature) / 3:
@@ -164,26 +180,36 @@ def _extractContactor(xls_data, staff_dict):
     '''
     提取出部门控制点责任人
     :param xls_data:
-    :param staff_list:
+    :param staff_dict:# {name/(IT): phone}
     :return: '责任人1,责任人2,...
     '''
     result = []
-    phone_flag = False
+    xls_data = xls_data.replace('基础平台部','').replace('基平','')
     pattern = re.compile('[^\u4e00-\u9fa5]')
-    data = pattern.split(xls_data)  # 提取责任人名字
-    if re.findall(r'\d{11}', xls_data): phone_flag = True  # 是否包含手机号码
-    for k, v in staff_dict.items():
-        k = pattern.split(k)[0]
-        if k in data:
-            if phone_flag and not v in xls_data:
-                continue
-            result.append(k)
-
+    data = pattern.split(xls_data)  # 提取汉字
+    index_cn = [xls_data.index(d) for d in data if d]  # 记录其他信息
+    index_cn.append(len(xls_data))
+    # 切分字段，方便对比手机号
+    xls_data_items = [xls_data[index_cn[i]:index_cn[i + 1]] for i in range(len(index_cn) - 1)]
+    for xdi in xls_data_items:
+        if len(xdi) < 2: continue
+        items = pattern.split(xdi) # 提取中文，含名字
+        if re.findall(r'\d{11}', xdi):
+            phone_flag = True  # 是否包含手机号码
+        else:
+            phone_flag = False
+        for k, v in staff_dict.items():
+            k = pattern.split(k)[0]  # 去除“（IT）”字样
+            if k in items:
+                if phone_flag and not v in xdi:
+                    continue
+                result.append(k)
     return ','.join(result)
 
 
 def _departmentFilter(dep_data, staff_cell):
-    for i in ['基础', '实物管理部门', '工程建设部门', '各采购需求部门', '各采购验收部门', '工程实施部门']:
+    # for i in ['基础','基平', '实物管理部门', '工程建设部门', '各采购需求部门', '各采购验收部门', '实施部门']:
+    for i in ['基础', '基平', '实物管理', '工程建设', '各', '实施']:
         if i in dep_data:
             return True
     if '基础' in staff_cell:

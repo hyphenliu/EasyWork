@@ -3,7 +3,9 @@ import urllib, re, json, time, random
 from http import cookiejar
 from urllib import request, parse
 from collections import defaultdict
+from django.core.cache import cache
 from dailywork.utils.phone import Phone
+
 
 class OA:
     def __init__(self, domain, user, password):
@@ -42,7 +44,7 @@ class OA:
 
     def _getFirstLoginInfo(self):
         '''
-
+        获取登录的cookies信息：token， success， apptempid
         :return:
         '''
         extractPattern = re.compile(
@@ -58,10 +60,10 @@ class OA:
             if items:
                 return items.groupdict()
             else:
-                print('解析url失败')
+                print('[ERROR] 解析url失败： {}'.format(self.loginUrl))
                 return
         else:
-            print('请求失败')
+            print('[ERROR] 请求失败: {}'.format(self.loginUrl))
             return
 
     def _login(self):
@@ -69,15 +71,20 @@ class OA:
         登录到首页
         :return:
         '''
+        result = {'error':'','success':''}
         req = request.Request(self.loginUrl, self.postData, headers=self.loginHeaders)
         response = self.opener.open(req)
         status = response.getcode()
         if status == 200:
-            self.opener.open(request.Request('http://eip.%s/' % self.domain))  # 登录首页
-            return True
+            response = self.opener.open(request.Request('http://eip.%s/' % self.domain))  # 登录首页
+            content = response.read().decode('utf-8')
+            if not '统一信息平台' in content:
+                result['error'] = '登录用户名或密码错误'
+            else:
+                result['success'] = 'success'
         else:
-            print('请求失败')
-            return False
+            result['error'] = '请求登录页面失败'
+        return result
 
     def _logout(self):
         '''
@@ -151,7 +158,10 @@ class OA:
          获取用户通讯录，返回列表【公司，部门，姓名，邮箱，电话，职务】
         :return:[[org, dep, name, email, phone, level],...]
         '''
-        if not self._login(): return  # 登录失败直接返回
+        login_result = self._login()
+        # 登录失败直接返回
+        if not login_result['success']:
+            return login_result
         result = []
         self.org_tree = defaultdict(list)
         url_prefix = 'http://cloudapps.%s/ua/' % self.domain
@@ -188,22 +198,25 @@ class OA:
         contact_tree_api = contact_tree_api_prefix % (org_tree, biz_type, oid, self._timeStamp())
         print(contact_index_url)
         self.opener.open(request.Request(contact_index_url))  # 访问通讯录页面，不能跳过
-        time.sleep(random.randint(2, 5))  # 随机休眠2-5秒
+        time.sleep(random.randint(1, 3))  # 随机休眠2-5秒
         print(contact_tree_api)
         response = self.opener.open(request.Request(contact_tree_api))  # 获取通讯录的组织结构树状图json信息
         json_content = self._readResJSON(response)  # 读取json信息
         org_rst = self._extractOID(json_content['data']['children'])  # 获取类型下所有机构的树状json信息
         org_dep = org_rst[org_type]['children'][org]['children']  # 获取指定公司的树状json信息
+        len_dep = len(org_dep)
+        idx = 0
         for k, v in org_dep.items():
+            idx += 1
             contact_info_api = contact_info_api_prefix % (biz_type, v['o'], self._timeStamp())
             print(contact_info_api)
             time.sleep(random.randint(1, 2))  # 随机休眠1-3秒
             response = self.opener.open(request.Request(contact_info_api))  # 获取部门联系人json信息
             json_content = self._readResJSON(response)  # 读取json信息
             result.extend(self._extractContact(json_content, org, k))
-
+            cache.set('{}ProgressNum'.format('contact'), '{:.1f}'.format(1.0 * 100 * idx / len_dep), 5)
         self._logout()
 
-        return result
+        return {'success':result, 'error':''}
 # oa = OA()
 # oa.main()

@@ -10,5 +10,6 @@ urlpatterns = [
     path('sox_ajax/<tablename>/', sox_ajax, name='sox_ajax'),
     path('cmitcontact/', cmitcontact, name='cmitcontact'),
     path('cmitcontact_ajax/', cmitcontact_ajax, name='cmitcontact_ajax'),
+    path('cmitcontact_progress/', cmitcontact_progress, name='cmitcontact_progress'),
     path('listpage/<tablename>/', listpage, name='listpage'),
 ]

@@ -71,7 +71,8 @@ def dealDailyworkImportFile(filePath, tableName, fileName):
     '''
     if tableName == 'sox':
         # {'origin':[[],...],'matrix':{{},...}}
-        fileData = SOX.getXlsContent(tableName, filePath, department='基础平台')
+        fileData, msg = SOX.getXlsContent(tableName, filePath, department='基础平台')
+        cache.set('pageShowOn{}'.format(tableName), msg, 5*60)
         return importDatabase(tableName, fileData)
 
 

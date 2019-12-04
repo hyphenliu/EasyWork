@@ -45,7 +45,7 @@ def importDatabase(tableName, datas, dropTable=False, dropTime=False):
     dataList = []
     if dropTable:  # 需要清空数据表
         model.objects.all().delete()
-    if dropTime:
+    if dropTime:  # 清空当天时间的数据
         today = datetime.date.today()
         model.objects.filter(update=today).delete()
     if isinstance(datas, list):
@@ -140,31 +140,6 @@ def updateSingle(tableName, data, column):
 
 
 #################################################################################
-def getAllForColumns(tableName, columns):
-    '''
-    返回指定N个字段，以资产标签为key，value为指定字段
-    :param tableName:数据表名
-    :param columns:需要的数据
-    :return:{asset_label:columns}
-    '''
-    result = {}
-    if ('asset_label' in columns) or ('early_label' in columns):
-        if 'asset_label' in columns:
-            index = columns.index('asset_label')
-        else:
-            index = columns.index('early_label')
-    else:
-        index = 0
-        columns.insert(0, 'asset_label')
-
-    columns = tuple(columns)
-    dataSets = tableClass[tableName].objects.all().values_list(*columns)
-    for ds in dataSets:
-        result[ds[index]] = ds
-
-    return result
-
-
 def getAllForColumns(tableName, columns, order_column='id'):
     '''
     返回指定N个字段，以资产标签为key，value为指定字段
@@ -174,7 +149,15 @@ def getAllForColumns(tableName, columns, order_column='id'):
     '''
     result = {}
     index = 0
-    columns.insert(0, order_column)
+    if tableName in ['erp', 'schedual', 'inventoried', 'inventory', 'prescap', 'scraped']:
+        if 'asset_label' in columns:
+            index = columns.index('asset_label')
+        elif 'early_label' in columns:
+            index = columns.index('early_label')
+        else:
+            columns.insert(0, 'asset_label')
+    else:
+        columns.insert(0, order_column)
     columns = tuple(columns)
     dataSets = tableClass[tableName].objects.all().values_list(*columns)
     for ds in dataSets:
@@ -189,8 +172,6 @@ def getAll(tableName):
     :param tableName:
     :return:
     '''
-    if tableName in ['erp', 'schedual', 'inventoried', 'inventory', 'prescap', 'scraped']:
-        return tableClass[tableName].objects.all().order_by('asset_label')
     return tableClass[tableName].objects.all()
 
 
@@ -202,28 +183,23 @@ def getDoubleData(tableName, columnNames, columnValues):
     :param columnValues:需要查询的值列表
     :return:
     '''
-    if tableName in ['erp', 'schedual', 'inventoried', 'inventory', 'prescap', 'scraped']:
-        if 'asset_label' in columnNames:  # 需要同时查询历史资产标签号
-            cIndex = columnNames.index('asset_label')
-            cv1 = columnValues[cIndex]
-            columnNames.remove('asset_label')
-            columnValues.remove(cv1)
+    if 'asset_label' in columnNames:  # 需要同时查询历史资产标签号
+        asset_label = 'asset_label__icontains'
+        cIndex = columnNames.index('asset_label')
+        cv1 = columnValues[cIndex]
+        columnNames.remove('asset_label')
+        columnValues.remove(cv1)
+        if tableName in ['erp', 'schedual']:
             if tableName == 'erp':
-                resultSets = tableClass[tableName].objects.filter(
-                    Q(**{'asset_label__icontains': cv1}) | Q(**{'early_label__icontains': cv1}),
-                    Q(**{columnNames[0] + '__icontains': columnValues[0]})).order_by('asset_label')
-            elif tableName == 'schedual':
-                resultSets = tableClass[tableName].objects.filter(
-                    Q(**{'asset_label__icontains': cv1}) | Q(**{'note__icontains': cv1}),
-                    Q(**{columnNames[0] + '__icontains': columnValues[0]})).order_by('asset_label')
+                his_label = 'early_label__icontains'
             else:
-                resultSets = tableClass[tableName].objects.filter(Q(**{'asset_label__icontains': cv1}),
-                                                                  Q(**{columnNames[0] + '__icontains': columnValues[
-                                                                      0]})).order_by('asset_label')
+                his_label = 'note__icontains'
+            resultSets = tableClass[tableName].objects.filter(
+                Q(**{asset_label: cv1}) | Q(**{his_label: cv1}),
+                Q(**{columnNames[0] + '__icontains': columnValues[0]}))
         else:
-            resultSets = tableClass[tableName].objects.filter(Q(**{columnNames[0] + '__icontains': columnValues[0]}),
-                                                              Q(**{columnNames[1] + '__icontains': columnValues[
-                                                                  1]})).order_by('asset_label')
+            resultSets = tableClass[tableName].objects.filter(
+                Q(**{asset_label: cv1}), Q(**{columnNames[0] + '__icontains': columnValues[0]}))
     else:
         resultSets = tableClass[tableName].objects.filter(Q(**{columnNames[0] + '__icontains': columnValues[0]}),
                                                           Q(**{columnNames[1] + '__icontains': columnValues[1]}))
@@ -238,16 +214,14 @@ def getExactlySingle(tableName, columnName, columnValue):
     :param columnValue: 字段值
     :return:
     '''
-    if 'asset_label' == columnName:
+    if tableName in ['erp', 'schedual'] and 'asset_label' == columnName:
         if tableName == 'schedual':
-            return tableClass[tableName].objects.filter(
-                Q(**{'asset_label__icontains': columnValue}) | Q(**{'note__iexact': columnValue})).order_by(
-                'asset_label')
-        if tableName == 'erp':
-            return tableClass[tableName].objects.filter(
-                Q(**{'asset_label__iexact': columnValue}) | Q(**{'early_label__iexact': columnValue})).order_by(
-                'asset_label')
-    return tableClass[tableName].objects.filter(**{columnName + '__iexact': columnValue}).order_by('asset_label')
+            his_label = 'note__icontains'
+        else:
+            his_label = 'early_label__icontains'
+        return tableClass[tableName].objects.filter(
+            Q(**{'asset_label__iexact': columnValue}) | Q(**{his_label: columnValue}))
+    return tableClass[tableName].objects.filter(**{columnName + '__iexact': columnValue})
 
 
 def getSingleData(tableName, columnName, columnValue):
@@ -258,22 +232,13 @@ def getSingleData(tableName, columnName, columnValue):
     :param columnValues:字段值
     :return:
     '''
-    if tableName in ['erp', 'schedual', 'inventoried', 'inventory', 'prescap', 'scraped']:
-        if 'asset_label' == columnName:  # 需要同时查询历史资产标签号
-            if tableName == 'erp':
-                resultSets = tableClass['erp'].objects.filter(
-                    Q(**{'asset_label__icontains': columnValue}) | Q(
-                        **{'early_label__icontains': columnValue})).order_by('asset_label')
-            elif tableName == 'schedual':
-                resultSets = tableClass[tableName].objects.filter(
-                    Q(**{'asset_label__icontains': columnValue}) | Q(**{'note__icontains': columnValue})).order_by(
-                    'asset_label')
-            else:
-                resultSets = tableClass[tableName].objects.filter(**{'asset_label__icontains': columnValue}).order_by(
-                    'asset_label')
+    if tableName in ['erp', 'schedual'] and 'asset_label' == columnName:
+        if tableName == 'erp':
+            his_label = 'early_label__icontains'
         else:
-            resultSets = tableClass[tableName].objects.filter(**{columnName + '__icontains': columnValue}).order_by(
-                'asset_label')
+            his_label = 'note__icontains'
+        resultSets = tableClass[tableName].objects.filter(
+            Q(**{'asset_label__icontains': columnValue}) | Q(**{his_label: columnValue}))
     else:
         resultSets = tableClass[tableName].objects.filter(**{columnName + '__icontains': columnValue})
 

@@ -12,13 +12,16 @@ from EasyWork.utils.data_struct import *
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
 
+
 @login_required
 def weeklyReport(request):
     return render(request, 'pages/dailywork_weekly_report.html')
 
+
 @login_required
 def taxiList(request):
     return render(request, 'pages/dailywork_taxi_list.html')
+
 
 @login_required
 def taxi_ajax(request, tablename):
@@ -48,17 +51,20 @@ def taxi_ajax(request, tablename):
         cache.set('export{}2XlsName'.format(tablename), tablename + '-' + month, 60)
         return HttpResponse(json.dumps({'success': '成功生成 %s 条数据，详见下载附件' % len(data_list)}))
 
+
 def sox(request):
     tableTitle = zip(htmlTitles['sox'], htmlColums['sox'])
     uploadStatus = cache.get('download{0}{1}file'.format('dailywork', 'sox'))
-
+    msg = cache.get('pageShowOn{}'.format('sox'), '')  # 获取处理结果，如错误信息，告警信息
     return render(request, 'pages/dailywork_sox_list.html',
-                      {'titles': tableTitle, 'uploadsuccess': uploadStatus})
+                  {'titles': tableTitle, 'uploadsuccess': uploadStatus, 'msg': msg})
+
 
 def sox_ajax(request):
     if request.is_ajax:
         col1 = request.GET.get('col1')
         col2 = request.GET.get('col2')
+
 
 @login_required
 def cmitcontact(request):
@@ -66,6 +72,7 @@ def cmitcontact(request):
     batchQueryStatus = cache.get('batchQuery{}Status'.format('contact'))
     return render(request, 'pages/dailywork_cmit_contact.html',
                   {'titles': tableTitle, 'querysuccess': batchQueryStatus})
+
 
 @login_required
 def cmitcontact_ajax(request):
@@ -78,12 +85,21 @@ def cmitcontact_ajax(request):
         oaurl = 'hq.cmcc'
         oa = OA(oaurl, oauser, oapasswd)
         result = oa.getContactInfo(org_type=org_type, org=org)
+        if result['error']:
+            print(result['error'])
+            return HttpResponse(json.dumps({'error':result['error']}))
         try:
-            importDatabase('contact', result, dropTable=True)
+            importDatabase('contact', result['success'], dropTable=True)
         except Exception as e:
             error = '导入数据库失败'
         ret = {'data': 'true', 'error': error}
         return HttpResponse(json.dumps(ret))
+
+
+def cmitcontact_progress(request):
+    p_num = cache.get('contactProgressNum','0')
+    return HttpResponse(json.dumps(p_num))
+
 
 @login_required
 def listpage(request, tablename):
@@ -95,7 +111,7 @@ def listpage(request, tablename):
         offset = request.GET.get('offset')
 
     dataList, queryStr = simpleQuery(request, tablename)
-    cache.set('export{}2XlsContent'.format(tablename), export2Xls('dailywork',dataList, tablename), 60)
+    cache.set('export{}2XlsContent'.format(tablename), export2Xls('dailywork', dataList, tablename), 60)
     cache.set('export{}2XlsName'.format(tablename), tablename + '-' + queryStr, 60)
 
     total = dataList.count()
@@ -114,4 +130,3 @@ def listpage(request, tablename):
         dataSets.append(d)
 
     return HttpResponse(json.dumps({'total': total, 'rows': dataSets}, cls=DatetimeEncoder))
-

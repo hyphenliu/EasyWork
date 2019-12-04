@@ -99,7 +99,7 @@
                 </div>
             </div>
         </div>
-        <div class="row">
+        <div class="row" id="resultdiv" hidden>
             <div class="col-lg-12">
                 <div class="ibox float-e-margins">
                     <div class="ibox-title">
@@ -153,6 +153,7 @@
                     if (dataObj['errors']) {
                         $("#result").html(dataObj['errors']);
                     } else {
+                        $('#resultdiv').attr("hidden", false);
                         $('#result').html('<p>插入成功</p>');
                         $("#inspector").attr("disabled", true);
                         $("#checker").attr("disabled", true);

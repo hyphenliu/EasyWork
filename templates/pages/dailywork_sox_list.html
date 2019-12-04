@@ -21,6 +21,22 @@
         </div>
     </div>
     <div class="wrapper wrapper-content animated fadeInRight">
+        {% if msg %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="ibox float-e-margins">
+                        <div class="ibox-title">
+                            <h5>导入表格核查结果</h5>
+                        </div>
+                        <div class="ibox-content" id="result">
+                            {% autoescape off %}
+                                {{ msg }}
+                            {% endautoescape %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <div class="row">
             <div class="col-lg-12">
                 <div class="ibox float-e-margins">

@@ -32,10 +32,11 @@ def _cellValue(cell):
         return ''
     if isinstance(cell.value, str):
         return cell.value.replace('\n', ' ').strip()
-    if isinstance(cell.value, datetime):
-        return cell.value.strftime('%Y%m%d')
     if isinstance(cell.value, int):
         return str(cell.value)
+    if isinstance(cell.value, datetime):
+        return cell.value.strftime('%Y%m%d')
+
     return cell.value
 
 
@@ -599,7 +600,7 @@ def _writeContent(tableName, filename, data):
                 ws.cell(row=row + 1, column=col + 1, value=v[row][col])  # cell 起始位置必须是1而非0
     wb.save(filename)
     wb.close()
-    cache.set('download{0}{1}file'.format('dailywork', tableName), filename, 1 * 60)
+    cache.set('download{0}{1}file'.format('network', tableName), filename, 1 * 60)
 
 
 def importIPMappingXls(tableName, filename):
@@ -634,7 +635,7 @@ def importIPMappingXls(tableName, filename):
         if not province_flag:
             print('表单【{}】的省份名字出现问题，请检查后再导入'.format(sheet_name))
             error_msgs.append('表单【{}】的省份名字出现问题，请检查后再导入'.format(sheet_name))
-            return messages, datas
+            return message, datas
 
         # 判断表是否为PAT/NAT表
         if 'pat' in sheet_name.lower():
@@ -683,10 +684,10 @@ def importIPMappingXls(tableName, filename):
     db_result = _dbOps(datas)
     if warning_msgs:
         message += '<div style="background:#FF0">{}</div>'.format(
-            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]).replace('\t', '&nbsp').replace('\n', '</p><p>'))
+            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]).replace('\t', '&emsp;'*2).replace('\n', '</p><p>'))
     if error_msgs:
         message += '<div style="color:#F00">{}</div>'.format(
-            ''.join(['<p>{}</p>'.format(i) for i in error_msgs]).replace('\t', '&nbsp').replace('\n', '</p><p>'))
+            ''.join(['<p>{}</p>'.format(i) for i in error_msgs]).replace('\t', 'emsp;'*2).replace('\n', '</p><p>'))
 
     return db_result, message
 
@@ -697,7 +698,7 @@ def _dbOps(datas):
     :param datas:{province:{'SINGLE':[], 'PAT':[]}, ...}
     :return:
     '''
-    m_import_result, m_update_result, p_import_result, p_update_result = False, False, False, False
+    m_import_result, m_update_result, p_import_result, p_update_result = True, True, True, True
 
     ip_mapping = []
     ip_pat_mapping = []
@@ -734,6 +735,7 @@ def _dbOps(datas):
     for i in [m_import_result, m_update_result, p_import_result, p_update_result]:
         if not i:
             return False
+    return True
 
 
 def _patContinueIPComplete(ip_item, split_tag='-'):

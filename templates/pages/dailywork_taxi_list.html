@@ -102,7 +102,7 @@
                 </div>
             </div>
         </div>
-        <div class="row">
+        <div class="row"  id="resultdiv" hidden>
             <div class="col-lg-12">
                 <div class="ibox float-e-margins">
                     <div class="ibox-title">
@@ -176,6 +176,7 @@
                     $("#result").html(dataObj['errors']);
                     if (!dataObj['errors']) {
                         $("#downloadList").attr('hidden', false);
+                        $("#resultdiv").attr('hidden', false);
                         $("#result").html(dataObj['success']);
                     }
                 },
