@@ -16,15 +16,15 @@ class KconfigParser(configparser.RawConfigParser):
     def write(self, fp):
         """解决ConfigParser的冒号/空格等被自动保存为等号而引起的后续解析问题"""
         if self._defaults:
-            fp.write(bytes("[%s]\n" % DEFAULTSECT, encoding='utf8'))
+            fp.write(bytes("[{}]\n".format(DEFAULTSECT), encoding='utf8'))
             for (key, value) in self._defaults.items():
-                fp.write(bytes("%s  %s\n" % (key, str(value).replace("\n", "\n\t")), encoding='utf8'))
+                fp.write(bytes("{}  {}\n".format(key, str(value).replace("\n", "\n\t")), encoding='utf8'))
             fp.write(b"\n")
         for section in self._sections:
-            fp.write(bytes("[%s]\n" % section, encoding="utf8"))
+            fp.write(bytes("[{}]\n".format(section), encoding="utf8"))
             for (key, value) in self._sections[section].items():
                 if key != "__name__":
-                    fp.write(bytes("%s  %s\n" % (key, str(value).replace("\n", "\n\t")), encoding="utf8"))
+                    fp.write(bytes("{}  {}\n".format(key, str(value).replace("\n", "\n\t")), encoding="utf8"))
             fp.write(b"\n")
 
 

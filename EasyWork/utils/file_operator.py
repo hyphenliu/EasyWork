@@ -41,6 +41,8 @@ def dealErpImportFile(filePath, tableName, fileName):
     if tableName == 'erpsoft':
         tableName = 'erp'
         dropTable = False
+    else:
+        dropTable = True
     try:
         titleList = tableTitles[tableName]
     except:

@@ -92,8 +92,8 @@ def listpage(request, tablename):
     try:
         paginator = Paginator(dataList, limit)
     except Exception:
-        print('get %s data error' % tablename)
-        return HttpResponse({'errors': 'Get %s data encounter an error' % tablename})
+        print('get {} data error'.format(tablename))
+        return HttpResponse({'errors': 'Get {} data encounter an error'.format(tablename)})
     try:
         page = int(int(offset) / int(limit) + 1)
         data = paginator.page(page)

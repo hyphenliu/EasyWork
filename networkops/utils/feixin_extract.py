@@ -21,7 +21,7 @@ class FeiXin:
         with  open(self.tmp_file, 'r') as f:
             flcontent = f.readlines()
         if not flcontent:
-            print('[ERROR] open file %s error' % self.tmp_file)
+            print('[ERROR] open file {} error'.format(self.tmp_file))
             return
         # {'分类':[群ID, 来源, 特征值, 起始时间, 结束时间]}
         self.keywords_dict = {
@@ -55,8 +55,8 @@ class FeiXin:
         :return: 返回数据
         '''
         groupId, nickName, contentBuffer, start, end = words
-        table_name = 'nMessageGroup_%s' % groupId
-        info_sql = "select t.timeStamp,t.fromNickname,t.contentBuffer from %s t where t.timeStamp > %s and t.timeStamp <= %s and t.fromNickname like '%%%s%%' and t.contentBuffer like '%%%s%%' and t.contentType='text/plain'" % (
+        table_name = 'nMessageGroup_{}'.format(groupId)
+        info_sql = "select t.timeStamp,t.fromNickname,t.contentBuffer from {} t where t.timeStamp > {} and t.timeStamp <= {} and t.fromNickname like '%%{}%%' and t.contentBuffer like '%%{}%%' and t.contentType='text/plain'".format(
             table_name, start, end, nickName, contentBuffer)
         self.cursor.execute(info_sql)
         info_data = self.cursor.fetchall()
@@ -79,7 +79,7 @@ class FeiXin:
         data:{'fengdu':[],'jiefeng':[]...}
         :return:
         '''
-        print('[INFO] Extracting information from feixin.[%s]' % time.ctime())
+        print('[INFO] Extracting information from feixin.[{}]'.format(time.ctime()))
         result = defaultdict(list)
         for k, v in self.keywords_dict.items():
             # print('{:=^60}'.format(k))
@@ -184,26 +184,26 @@ def baozhangExtract(contents, time_str, resource):
         item_dict = it.groupdict()
         ip_source = ipExtract(item_dict['ip_source'])
         if not ip_source:
-            print('[Not normal][baozhang][source IP error] %s' % contents)
+            print('[Not normal][baozhang][source IP error] {}'.format(contents))
         item_dict['ip_source'] = ip_source
         ip_dest = ipExtract(item_dict['ip_dest'])
         if not ip_dest:
-            print('[Not normal][baozhang][destination IP error] %s' % contents)
-        item_dict['ip_dest'] = ip_dest
-        item_dict['income_time'] = time_str
-        item_dict['resource'] = resource
-        if '高级事件' in item_dict['reason']:
-            item_dict['level'] = '高级事件告警'
-        elif '中级事件' in item_dict['reason']:
-            item_dict['level'] = '中级事件告警'
-        else:
-            item_dict['level'] = '未提取到'
-        result.append(item_dict)
-    if not result:
-        print('[Not normal][baozhang] %s' % contents)
-        item_dict = {'reason': contents, 'ip_source': ' ', 'ip_dest': ' ', 'income_time': time_str,
-                     'resource': resource}
-        result.append(item_dict)
+            print('[Not normal][baozhang][destination IP error] {}'.format(contents))
+            item_dict['ip_dest'] = ip_dest
+            item_dict['income_time'] = time_str
+            item_dict['resource'] = resource
+            if '高级事件' in item_dict['reason']:
+                item_dict['level'] = '高级事件告警'
+            elif '中级事件' in item_dict['reason']:
+                item_dict['level'] = '中级事件告警'
+            else:
+                item_dict['level'] = '未提取到'
+            result.append(item_dict)
+            if not result:
+                print('[Not normal][baozhang] {}'.format(contents))
+            item_dict = {'reason': contents, 'ip_source': ' ', 'ip_dest': ' ', 'income_time': time_str,
+                         'resource': resource}
+            result.append(item_dict)
     return result
 
 
@@ -254,14 +254,14 @@ def jichujfExtract(contents, time_str, resource):
             continue
         extract_list = jichujfSubExtract(content, v[-1])
         if not extract_list:
-            print('[Not normal][jichujf][sub extract] %s' % content)
+            print('[Not normal][jichujf][sub extract] {}'.format(content))
             continue
         for el in extract_list:
             item_dict = {'serial_number': el, 'income_time': time_str, 'resource': resource, 'outcome': v[2]}
             if item_dict not in result:
                 result.append(item_dict)
     if not result:
-        print('[Not normal][jichujf] %s' % contents)
+        print('[Not normal][jichujf] {}'.format(contents))
         result.append({'serial_number': contents, 'income_time': time_str, 'resource': resource, 'outcome': ' '})
     return result
 
@@ -316,14 +316,14 @@ def jichufdExtract(contents, time_str, resource):
         content_index = v[1]
         extract_list = jichufdSubExtract(content, v[-1])
         if not extract_list:
-            print('[Not normal][jichufd][sub extract] %s' % content)
+            print('[Not normal][jichufd][sub extract] {}'.format(content))
             continue
         for el in extract_list:
             item_dict = {'serial_number': el, 'income_time': time_str, 'resource': resource, 'outcome': v[2]}
             if item_dict not in result:
                 result.append(item_dict)
     if not result:
-        print('[Not normal][jichufd] %s' % contents)
+        print('[Not normal][jichufd] {}'.format(contents))
         index = contents.find('FD-')
         if index > 0:
             result.append(
@@ -361,19 +361,19 @@ def paichaExtract(contents, time_str, resource):
         item_dict = it.groupdict()
         ip_attack = ipExtract(item_dict['ip_attack'])
         if not ip_attack:
-            print('[Not normal][paicha][attack IP error] %s' % item_dict)
+            print('[Not normal][paicha][attack IP error] {}'.format(item_dict))
             continue
         item_dict['ip_attack'] = ip_attack
         ip_attacked = ipExtract(item_dict['ip_attacked'])
         if not ip_attacked:
-            print('[Not normal][paicha][attacked IP error] %s' % item_dict)
+            print('[Not normal][paicha][attacked IP error] {}'.format(item_dict))
             continue
         item_dict['ip_attacked'] = ip_attacked
         item_dict['income_time'] = time_str
         item_dict['resource'] = resource
         result.append(item_dict)
     if not result:
-        print('[Not normal][paicha] %s' % contents)
+        print('[Not normal][paicha] {}'.format(contents))
     return result
 
 
@@ -403,7 +403,7 @@ def paichaExtract2(contents, time_str, resource):
         item_dict['resource'] = resource
         result.append(item_dict)
     if not result:
-        print('[Not normal][paicha2] %s' % contents)
+        print('[Not normal][paicha2] {}'.format(contents))
         item_dict = {'serial_number': ' ', 'reason': contents, 'ip_attack': ' ', 'ip_attacked': ' ', 'location': ' ',
                      'means': ' ', 'guard': '排查', 'result': ' ', 'income_time': time_str, 'resource': resource, }
         result.append(item_dict)
@@ -423,7 +423,7 @@ def yijiefengExtract(contents, time_str, resource):
     sub_pattern = re.compile('(?P<serial_number>解封-\d+-\d+)', re.I)
     serialnumber_str = yijifengPattern.match(contents)
     if not serialnumber_str:
-        print('[Not normal][yijiefeng] %s' % contents)
+        print('[Not normal][yijiefeng] {}'.format(contents))
         return False
     serialnumbers = re.finditer(sub_pattern, serialnumber_str.groupdict()['serial_number'])
     items = []
@@ -434,7 +434,7 @@ def yijiefengExtract(contents, time_str, resource):
     for sl in serial_list:
         result.append({'serial_number': sl, 'outcome_time': time_str, 'excutor': resource, 'outcome': '已解封'})
     if not result:
-        print('[Not normal][yijiefeng] %s' % contents)
+        print('[Not normal][yijiefeng] {}'.format(contents))
     return result
 
 
@@ -454,14 +454,14 @@ def jiefengExtract(contents, time_str, resource):
         item_dict = it.groupdict()
         ips = ipExtract(item_dict['ip_list'])
         if not ips:
-            print('[Not normal][jiefeng][IP error] %s' % item_dict)
+            print('[Not normal][jiefeng][IP error] {}'.format(item_dict))
             continue
         item_dict['ip_list'] = ips
         item_dict['income_time'] = time_str
         item_dict['resource'] = resource
         result.append(item_dict)
     if not result and len(contents) > 13:
-        print('[Not normal][jiefeng] %s' % contents)
+        print('[Not normal][jiefeng] {}'.format(contents))
         result.append(
             {'serial_number': contents, 'income_time': time_str, 'resource': resource, 'ip_list': ' '})
     return result
@@ -507,14 +507,14 @@ def yifengduExtract(contents, time_str, resource):
         content_index = v[1]
         extract_list = yifengduSubExtract(content, v[-1])
         if not extract_list:
-            print('[Not normal][yifengdu][sub extract] %s' % content)
+            print('[Not normal][yifengdu][sub extract] {}'.format(content))
             continue
         for el in extract_list:
             item_dict = {'serial_number': el, 'outcome_time': time_str, 'excutor': resource, 'outcome': v[2]}
             if item_dict not in result:
                 result.append(item_dict)
     if not result:
-        print('[Not normal][yifengdu] %s' % contents)
+        print('[Not normal][yifengdu] {}'.format(contents))
     return result
 
 
@@ -522,7 +522,7 @@ def yifengduSubExtract(contents, yifengduPattern):
     sub_pattern = re.compile('.*?(?P<serial_number>FD-\d+-\d+)', re.I)
     serialnumber_str = yifengduPattern.match(contents)
     if not serialnumber_str:
-        print('[Not normal][yifengdu] %s' % contents)
+        print('[Not normal][yifengdu] {}'.format(contents))
         return False
     serialnumbers = re.finditer(sub_pattern, serialnumber_str.groupdict()['serial_number'])
     items = []
@@ -556,15 +556,16 @@ def fengduExtract(contents, time_str, resource):
 
         ips = ipExtract(item_dict['ip_list'])
         if not ips:
-            print('[Not normal][fengdu][IP error] %s' % item_dict)
+            print('[Not normal][fengdu][IP error] {}'.format(item_dict))
             continue
         item_dict['ip_list'] = ips
         result.append(item_dict)
+    # 【注意】在调整格式时以下代码出现了点问题，后续需要修改
     if not result and len(contents) > 20:
         number_time = ':'.join(time_str.split(' ')[-1].split(':')[:2])
         extract_list = fengduExtract2(contents)
         if not extract_list:
-            print('[Not normal][fengdu] %s' % contents)
+            print('[Not normal][fengdu] {}'.format(contents))
             result.append(
                 {'serial_number': ' ', 'number_time': ' ', 'resource': resource, 'ip_list': ' ', 'reason': contents,
                  'income_time': time_str})
@@ -574,10 +575,11 @@ def fengduExtract(contents, time_str, resource):
                     ip_list = '详见附件'
                 else:
                     ip_list = '详见处置原因'
-                item_dict = {'serial_number': el, 'number_time': 'number_time', 'resource': resource,
+                item_dict = {'serial_number': el, 'number_time': number_time, 'resource': resource,
                              'ip_list': ip_list, 'reason': contents, 'income_time': time_str}
                 if item_dict not in result:
                     result.append(item_dict)
+
     return result
 
 
@@ -624,7 +626,7 @@ def compeleteContinueNumber(contents, items):
         i_num = item_indexs[i]
         j_num = step_indexs[j_index]
         if j_num > item_indexs[-1]:
-            print('[WARNING] something should be pay attention. %s' % contents)
+            print('[WARNING] something should be pay attention. {}'.format(contents))
             break
         if j_num > i_num and j_num < item_indexs[i + 1]:
             t = (items[int((i + 1) / 2) - 1], items[int((i + 1) / 2)])
@@ -691,7 +693,7 @@ def ipExtract(ip_str):
         return 'IP empty'
     ips = re.finditer(ip_regex, ip_str)
     if not ips:
-        print('[Not normal][IP error]%s' % ip_str)
+        print('[Not normal][IP error]{}'.format(ip_str))
         return False
     for ip in ips:
         ip_list.append(ip.group())
@@ -707,12 +709,12 @@ def playMusic(items):
     for item in items:
         if 'location' in item:
             if '深圳' in item['location']:
-                print('[INFO] find [深圳] Need check! ', item)
+                print('[INFO] find [深圳] Need check! {}'.format(item))
                 flag = True
             else:
                 flag = False
         else:
-            print('[INFO] Need check! ', item)
+            print('[INFO] Need check! {}'.format(item))
             flag = True
     if flag:
         play()
@@ -730,18 +732,18 @@ def updateDatabase():
     data_dict = feixinInfo2DB()
     for k, v in data_dict.items():
         if k in tableClass:
-            print('[INFO] Insert %s into %s' % (len(v),k))
+            print('[INFO] Insert {} into {}'.format(len(v), k))
             insertBulk(k, v)
         elif k == 'yifengdu':
-            print('[INFO] Update %s into %s' % (len(v),k))
+            print('[INFO] Update {} into {}'.format(len(v), k))
             updateBulk('fengdu', v, 'serial_number')
         elif k == 'yijiefeng':
-            print('[INFO] Update %s into %s' % (len(v),k))
+            print('[INFO] Update {} into {}'.format(len(v), k))
             updateBulk('jiefeng', v, 'serial_number')
 
-# content = '【FD-0619-445】深基封堵完成'
-# jichufdExtract(content,'test','test')
-# content2 = 'PC-0608-028【内网网络事件】请相关部门排查：被攻击ip:192.168.31.240 物理位置:三期南北 攻击手段:怀疑被植入挖矿后门 防护措施:建议排查主机'
-# paichaExtract2(content2, 'test', 'test')
-# updateDatabase()
-# play()
+            # content = '【FD-0619-445】深基封堵完成'
+            # jichufdExtract(content,'test','test')
+            # content2 = 'PC-0608-028【内网网络事件】请相关部门排查：被攻击ip:192.168.31.240 物理位置:三期南北 攻击手段:怀疑被植入挖矿后门 防护措施:建议排查主机'
+            # paichaExtract2(content2, 'test', 'test')
+            # updateDatabase()
+            # play()

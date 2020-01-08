@@ -84,8 +84,8 @@ def uploadFile(request, module, tableName):
     :param tableName: 数据库表名
     :return:
     '''
-    fileName = cache.get('%s-fileName' % module)
-    action = cache.get('%s-action' % module)
+    fileName = cache.get('{}-fileName'.format(module))
+    action = cache.get('{}-action'.format(module))
     if request.method == 'POST':
         timeStr = time.strftime('_%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
         uploadFile = request.FILES.getlist('file[]')[0]
@@ -103,8 +103,8 @@ def uploadFile(request, module, tableName):
     elif request.method == 'GET':
         fileName = request.GET.get('filename')
         action = request.GET.get('action')
-        cache.set('%s-fileName' % module, fileName, 2 * 60)
-        cache.set('%s-action' % module, action, 2 * 60)
+        cache.set('{}-fileName'.format(module), fileName, 2 * 60)
+        cache.set('{}-action'.format(module), action, 2 * 60)
 
     return render(request, 'pages/upload_file.html',
                   {'module': module, 'filename': fileName, 'tablename': tableName})

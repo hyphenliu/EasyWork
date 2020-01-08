@@ -153,12 +153,12 @@ def _getHeadLine(sheet_content):
         cell_values = re.sub(r'\s', '', cell_values).strip('|')
         for sf in sox_feature:
             if sf in cell_values: count += 1
-        if count > len(sox_feature) / 3:
+        if count > len(sox_feature) / 4:
             row_num = row[1].row
             if '具体部门' in cell_values: department_flag = True
             break
     if row_num < 0:
-        print('【ERROR】解析Excel出错，没有找到超过1/3的特征值列')
+        print('【ERROR】解析Excel出错，没有找到超过1/4的特征值列')
         return
     # 找到字段对应的列
     result['row_num'] = row_num

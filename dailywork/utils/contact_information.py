@@ -1,10 +1,11 @@
 # -*- coding:utf-8 -*-
-import urllib, re, json, time, random
+import urllib, re, json, time, random, datetime
 from http import cookiejar
 from urllib import request, parse
 from collections import defaultdict
 from django.core.cache import cache
 from dailywork.utils.phone import Phone
+from EasyWork.utils.database_ops import getAll
 
 
 class OA:
@@ -17,26 +18,26 @@ class OA:
         '''
         # 第一步请求
         self.domain = domain
-        self.loginUrl = "http://eip.%s" % self.domain
+        self.loginUrl = "http://eip.{}".format(self.domain)
         self.loginHeaders = {
-            'Host': 'eip.%s' % domain,
+            'Host': 'eip.{}'.format(domain),
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0',
             'Connection': 'keep-alive'
         }
-        paramsDict = self._getFirstLoginInfo()
-        if not paramsDict:
+        self.paramsDict = self._getFirstLoginInfo()
+        if not self.paramsDict:
             return
         self.loginHeaders['Referer'] = self.loginUrl
-        self.loginHeaders['Host'] = 'sso.%s' % self.domain
+        self.loginHeaders['Host'] = 'sso.{}'.format(self.domain)
         self.loginHeaders['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
         self.post = post = {
             'userid': user,
             'password': password,
-            'apptempid': paramsDict['apptempid'],
-            'success': paramsDict['success'],
-            'token': paramsDict['token']
+            'apptempid': self.paramsDict['apptempid'],
+            'success': self.paramsDict['success'],
+            'token': self.paramsDict['token']
         }
-        self.loginUrl = 'http://sso.%s/sso/login' % self.domain
+        self.loginUrl = 'http://sso.{}/sso/login'.format(self.domain)
         self.postData = parse.urlencode(self.post).encode('utf-8')
         self.cookie = cookiejar.LWPCookieJar()
         self.cookieHandler = request.HTTPCookieProcessor(self.cookie)
@@ -52,7 +53,11 @@ class OA:
         req = request.Request(self.loginUrl)
         httpHandler = request.HTTPHandler()
         opener = request.build_opener(httpHandler)
-        response = opener.open(req)
+        try:
+            response = opener.open(req)
+        except Exception as e:
+            print(e)
+            return
         status = response.getcode()
         if status == 200:
             self.loginUrl = response.url
@@ -71,7 +76,7 @@ class OA:
         登录到首页
         :return:
         '''
-        result = {'error':'','success':''}
+        result = {'error': '', 'success': ''}
         req = request.Request(self.loginUrl, self.postData, headers=self.loginHeaders)
         response = self.opener.open(req)
         status = response.getcode()
@@ -111,11 +116,11 @@ class OA:
             address = p.main(phone)
             if not address:
                 address = ' '
-                print('{0}没有找到归属地'.format(phone))
+                print('{}的手机{}没有找到归属地'.format(name, phone))
             else:
                 address = address.split('|')[1]
             level = data.get('level', '新员工').strip()
-            result.append([org, dep, name, address, email, phone, level])
+            result.append([org, dep, name, address, email, phone, level, '在职'])  # 按照data_struct.py中设定的顺序排列
         return result
 
     def _extractOID(self, datas, level=1, parent_o='', parent_name=''):
@@ -153,7 +158,7 @@ class OA:
     def _timeStamp(self):
         return int(round(time.time() * 1000))
 
-    def getContactInfo(self, org_type='直属单位', org='信息技术中心（公司）'):
+    def _getContact_(self, org_type='直属单位', org='信息技术中心（公司）'):
         '''
          获取用户通讯录，返回列表【公司，部门，姓名，邮箱，电话，职务】
         :return:[[org, dep, name, email, phone, level],...]
@@ -217,6 +222,32 @@ class OA:
             cache.set('{}ProgressNum'.format('contact'), '{:.1f}'.format(1.0 * 100 * idx / len_dep), 5)
         self._logout()
 
-        return {'success':result, 'error':''}
+        return {'success': result, 'error': ''}
+
+    def getContactInfo(self, org_type='直属单位', org='信息技术中心（公司）'):
+        result = self._getContact_(org_type, org)
+        if not result['success']: return result
+        db_dict = {}
+        updata_item = []
+        insert_item = []
+        # ['organization', 'department', 'name', 'address', 'email', 'phone', 'duty', 'status']
+        datas = result['success']
+        db_data = getAll('contact').values()
+        for dd in db_data: # 考虑兼职问题，增加部门作为唯一值
+            db_dict['{}{}'.format(dd['department'], dd['email'])] = dd
+        for data in datas:
+            k = '{}{}'.format(data[1], data[4])
+            if k in db_dict:
+                db_dict.pop(k)  # 删除已经存在的数据
+            else:
+                insert_item.append(data)  # 新入职员工
+        # 已离职人员，只取值value，不取键key
+        for _, v in db_dict.items():
+            v['update'] = datetime.datetime.now()
+            v['status'] = '离职'
+            updata_item.append(v)
+        error = result['error']
+
+        return {'insert': insert_item, 'update': updata_item, 'error': error}
 # oa = OA()
 # oa.main()

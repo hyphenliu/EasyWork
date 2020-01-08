@@ -4,7 +4,7 @@
 @File  : phone.py
 @Author: HP.Liew
 @Date  : 2019/8/26 11:04
-@Desc  : 
+@Desc  : 本程序不用更改，只需要每次更新指定目录下的“phone.dat”文件即可
 '''
 import os
 import struct

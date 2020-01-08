@@ -1,6 +1,19 @@
-from selenium import webdriver
-import time, ssl, random, shutil, os, smtplib
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+'''
+@File  : mail_sender.py
+@Author: HP.Liew
+@Date  : 2019/5/7 10:29
+@Desc  :
+'''
+import time
+import ssl
+import random
+import shutil
+import os
+import smtplib
 import openpyxl
+from selenium import webdriver
 from django.conf import settings
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -8,7 +21,8 @@ from email.mime.application import MIMEApplication
 from email.header import Header
 from email.utils import parseaddr
 from collections import defaultdict
-from networkops.utils.views_utils import decrypt, formatEmailAddr
+from EasyWork.utils.en_decrypt import decrypt
+from EasyWork.utils.mail_utils import *
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -44,17 +58,17 @@ class CheckDevice:
         if hour == 0:
             day = day - 1
             hour = 24
-        self.hourStr = "%02d点-%02d点" % (hour - 2, hour)  # 06:00-08:00
-        self.dateStr1 = '%02d%02d' % (month, day)  # 0615
-        self.dateStr2 = '%s年%02d月%02d日' % (year, month, day)  # 2019年06月15日
-        self.dateStr3 = '%02d月%02d日%s' % (month, day, self.hourStr)  # 06月15日18:00点
+        self.hourStr = "{:0>2d}点-{:0>2d}点".format(hour - 2, hour)  # 06:00-08:00
+        self.dateStr1 = '{:0>2d}{:0>2d}'.format(month, day)  # 0615
+        self.dateStr2 = '{}年{:0>2d}月{:0>2d}日'.format(year, month, day)  # 2019年06月15日
+        self.dateStr3 = '{:0>2d}月{:0>2d}日{}'.format(month, day, self.hourStr)  # 06月15日18:00点
         self.reportFileName = os.path.join(settings.TEST_DIRS, 'doc',
-                                           '核心设备每日检查表-深圳-%s(%s).xlsx' % (self.dateStr1, self.hourStr))
+                                           '核心设备每日检查表-深圳{}({}).xlsx'.format(self.dateStr1, self.hourStr))
         self.reportTempFile = os.path.join(settings.TEST_DIRS, 'doc', '核心设备每日检查表-深圳-模版.xlsx')
-        self.zipFile = os.path.join(settings.TEST_DIRS, 'doc', '核心设备每日检查表-深圳%s.zip' % self.dateStr1)
-        self.zip_base_name = os.path.split(self.zipFile)[-1]
-        if os.path.exists(self.zipFile):
-            os.remove(self.zipFile)
+        self.zip_file = os.path.join(settings.TEST_DIRS, 'doc', '核心设备每日检查表-深圳{}.zip'.format(self.dateStr1))
+        self.zip_base_name = os.path.split(self.zip_file)[-1]
+        if os.path.exists(self.zip_file):
+            os.remove(self.zip_file)
 
     def _initBroswer(self):
         '''
@@ -91,18 +105,18 @@ class CheckDevice:
         try:
             self._initBroswer()
         except Exception as e:
-            print('[ERROR] Init browser failed.%s' % e)
+            print('[ERROR] Init browser failed.{}'.format(e))
             self.browser.quit()
             return ['failed', 'failed']
 
         for host, items in self.data.items():
             for ip in items['ip']:
                 print('*' * 79)
-                print('[INFO] Start checking [%s] ...' % ip)
-                self.browser.get('https://%s' % ip)
+                print('[INFO] Start checking [{}] ...'.format(ip))
+                self.browser.get('https://{}'.format(ip))
                 if self.browser.page_source == '<html><head></head><body></body></html>':
-                    print('[ERROR] Connect %s failed. Network error.' % ip)
-                    failedList.append('Connect %s failed' % ip)
+                    print('[ERROR] Connect {} failed. Network error.'.format(ip))
+                    failedList.append('Connect {} failed'.format(ip))
                     continue
                 self.browser.find_element_by_id(items['userid']).send_keys(items['user'])
                 self.browser.find_element_by_id(items['passwordid']).send_keys(items['password'])
@@ -110,17 +124,17 @@ class CheckDevice:
                 content = str(self.browser.page_source)
 
                 if items['keywords'] in ' '.join(content.split('\n')):
-                    print('[INFO] Login %s Success' % ip)
+                    print('[INFO] Login {} Success'.format(ip))
                 else:
-                    print('[ERROR] Login %s Failed' % ip)
+                    print('[ERROR] Login {} Failed'.format(ip))
                     failedList.append(ip + ' login failed')
 
                 for url in items['infourl']:
-                    print('[INFO] Visiting %s' % url)
+                    print('[INFO] Visiting {}'.format(url))
                     int = random.randint(10, 15)
                     time.sleep(int)
-                    self.browser.get('https://%s/%s' % (ip, url))
-                print('[INFO] Logout %s .' % ip)
+                    self.browser.get('https://{}/{}'.format(ip, url))
+                print('[INFO] Logout {} .'.format(ip))
         print('[INFO] Check complete!')
         self.browser.quit()
         return failedList
@@ -135,16 +149,16 @@ class CheckDevice:
         wb = openpyxl.load_workbook(self.reportFileName)
         ws = wb.worksheets[0]
         ws.title = self.dateStr1
-        ws["C1"] = "检查时段%s" % self.dateStr3
+        ws["C1"] = "检查时段{}".format(self.dateStr3)
         for i in range(3, 12):
             ws.cell(i, 5, self.inspector)
             ws.cell(i, 6, self.checker)
         try:
             wb.save(self.reportFileName)
-            print('[INFO] Product report %s success!' % self.reportFileName)
+            print('[INFO] Product report {} success!'.format(self.reportFileName))
             return True
         except Exception as e:
-            print('[ERROR] Product report %s failed. %s' % (self.reportFileName, e))
+            print('[ERROR] Product report {} failed. {}'.format(self.reportFileName, e))
             return False
 
     def _compress(self):
@@ -154,16 +168,16 @@ class CheckDevice:
         '''
         print('[INFO] Compress cipher zip file')
         if settings.op_system == 'Windows':
-            compress_cmd = 'Bandizip.exe a -y  -p:%s %s %s' % (self.passwd[3], self.zipFile, self.reportFileName)
+            compress_cmd = 'Bandizip.exe a -y  -p:{} {} {}'.format(self.passwd[3], self.zip_file, self.reportFileName)
         else:
-            compress_cmd = 'zip -rP:%s %s %s' % (self.passwd[3], self.zipFile, self.reportFileName)
+            compress_cmd = 'zip -rP:{} {} {}'.format(self.passwd[3], self.zip_file, self.reportFileName)
         time.sleep(random.randint(10, 15))
         try:
             os.system(compress_cmd)
-            print('[INFO] Compress zip %s success!' % self.zipFile)
+            print('[INFO] Compress zip {} success!'.format(self.zip_file))
             return True
         except Exception as e:
-            print('[ERROR] Compress zip %s encounter en error!' % self.zipFile)
+            print('[ERROR] Compress zip {} encounter en error!'.format(self.zip_file))
             print(e)
             return False
 
@@ -173,35 +187,12 @@ class CheckDevice:
         :return: 返回是否发送成功
         '''
         print('[INFO] Prepare send email')
-        msg_root = MIMEMultipart('related')
-        msg_root['subject'] = Header('%s%s深圳侧核心设备巡检' % (self.dateStr2, self.hourStr))
-        msg_root['to'] = ','.join(self.recevier)
-        msg_root['cc'] = ','.join(self.cc)
-        msg_root['from'] = self.sender
-        msg_root['date'] = time.ctime()
-
+        title = '{}{}深圳侧核心设备巡检'.format(self.dateStr2, self.hourStr)
         body = """各位好，
-    %s%s深圳核心设备巡检无异常，检查人：%s、复核人：%s，详见附件%s""" % (
+            {}{}深圳核心设备巡检无异常，检查人：{}、复核人：{}，详见附件{}""".format(
             self.dateStr2, self.hourStr, self.inspector, self.checker, self.bodymessage)
-        b_body = MIMEText(body, 'plain', 'utf-8')
-        msg_root.attach(b_body)
-
-        part = MIMEApplication(open('%s' % self.zipFile, 'rb').read())
-        # 解决outlook显示附件为bin
-        part.add_header('Content-Disposition', 'attachment', filename=Header(self.zip_base_name, 'utf-8').encode())
-        msg_root.attach(part)
-
-        s_smtp = smtplib.SMTP(self.smtp_server, 25)
-        s_smtp.login(self.mail_address, self.password)
-        try:
-            s_smtp.sendmail(self.sender, self.recevier + self.cc, str(msg_root))
-            s_smtp.quit()
-            print('[INFO] Email sent!')
-            return True
-        except Exception as e:
-            s_smtp.quit()
-            print('[ERROR] Send email encounter en error. %s' % e)
-            return False
+        return mailSender(title=title, sender=self.sender, recevier=self.recevier, cc=self.cc, body=body,
+                          sender_mail=self.mail_address, sender_pass=self.passwd, file_name=self.zip_file)
 
     def _program(self):
         self._initVar()

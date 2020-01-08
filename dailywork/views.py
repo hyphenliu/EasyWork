@@ -49,7 +49,7 @@ def taxi_ajax(request, tablename):
         data_list = taxiListGen(item_limit, total_limit, day_list)
         cache.set('export{}2XlsContent'.format(tablename), data_list, 60)
         cache.set('export{}2XlsName'.format(tablename), tablename + '-' + month, 60)
-        return HttpResponse(json.dumps({'success': '成功生成 %s 条数据，详见下载附件' % len(data_list)}))
+        return HttpResponse(json.dumps({'success': '成功生成 {} 条数据，详见下载附件'.format(len(data_list))}))
 
 
 def sox(request):
@@ -84,14 +84,22 @@ def cmitcontact_ajax(request):
         org_type = request.GET.get('orgtype', '直属单位')
         oaurl = 'hq.cmcc'
         oa = OA(oaurl, oauser, oapasswd)
+        if not oa.paramsDict:
+            return HttpResponse(json.dumps({'error': '请在内网使用本程序！'}))
         result = oa.getContactInfo(org_type=org_type, org=org)
         if result['error']:
             print(result['error'])
             return HttpResponse(json.dumps({'error':result['error']}))
-        try:
-            importDatabase('contact', result['success'], dropTable=True)
-        except Exception as e:
-            error = '导入数据库失败'
+        if result['insert']:
+            try:
+                importDatabase(tableName='contact', datas=result['insert'], dropTable=False)
+            except Exception as e:
+                error = '导入数据库失败'
+        if result['update']:
+            try:
+                updateBulk(tableName='contact', datas=result['update'], column=['department','email','phone'])
+            except Exception as e:
+                error = '更新数据库失败'
         ret = {'data': 'true', 'error': error}
         return HttpResponse(json.dumps(ret))
 
@@ -118,8 +126,8 @@ def listpage(request, tablename):
     try:
         paginator = Paginator(dataList, limit)
     except Exception:
-        print('get %s data error' % tablename)
-        return HttpResponse(json.dumps({'errors': '获取 %s 数据时出现错误' % tablename}))
+        print('get {} data error'.format(tablename))
+        return HttpResponse(json.dumps({'errors': '获取 {} 数据时出现错误'.format(tablename)}))
     try:
         page = int(int(offset) / int(limit) + 1)
         data = paginator.page(page)

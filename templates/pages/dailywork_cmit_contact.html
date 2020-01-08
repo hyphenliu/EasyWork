@@ -39,12 +39,29 @@
                                             <option value="">--请选择--</option>
                                             <option value="department">部门</option>
                                             <option value="name">姓名</option>
-                                            <option value="duty">职务</option>
-                                            <option value="phone">电话</option>
-                                            <option value="address">办公地点</option>
+                                            <option value="address">号码归属地</option>
                                             <option value="email">邮箱</option>
+                                            <option value="phone">电话</option>
+                                            <option value="duty">职务</option>
+                                            <option value="status">状态</option>
+                                            <option value="update">更新日期</option>
                                         </select>
                                         <input type="text" style="height: 25px;" name="columnValue1" id="columnValue1"/>&nbsp;
+                                    </div>
+                                    <div class="columns pull-left">
+                                        <select class="selectpicker" id="columnName2">
+                                            <option value="">--请选择--</option>
+                                            <option value="department">部门</option>
+                                            <option value="name">姓名</option>
+                                            <option value="address">号码归属地</option>
+                                            <option value="email">邮箱</option>
+                                            <option value="phone">电话</option>
+                                            <option value="duty">职务</option>
+                                            <option value="status">状态</option>
+                                            <option value="update">更新日期</option>
+                                        </select>
+                                        <input type="text" class="" name="columnValue2" id="columnValue2"
+                                               style="height: 25px;"/>&nbsp;
                                     </div>
                                     <div class="columns pull-left">
                                         <button class="btn btn-primary " id="querybutton">查询</button>&nbsp;
@@ -137,28 +154,28 @@
                         $("#errormsg").attr('hidden', false).html(dataObj["error"]);
                     } else {
                         $("#errormsg").attr('hidden', true);
-                        var setInterv = setInterval(function () {
-                            $("#progressdiv").attr('hidden', false);
-                            var prog_url = '/dailywork/cmitcontact_progress/';
-                            $.getJSON(prog_url, function (progress_num) {
-                                $('.progress-bar').css('width', progress_num + '%');
-                                $('.progress-bar').text(progress_num + '%');
-                                if (progress_num == '99') {
-                                    clearInterval(setInterv);
-                                    $('.progress-bar').css('width', '100%');
-                                    $('.progress-bar').text('100%');
-                                    $("#progressdiv").attr('hidden', true);
-                                }
-                            });
-                        }, 1000);
                         $("#downloadcontact").show();
                         $('#querybutton').click();
-                        clearInterval(setInterv);
-                        $("#progressdiv").attr('hidden', true);
                     }
+                    clearInterval(setInterv);
+                    $("#progressdiv").attr('hidden', true);
                 }
             });
-
+            var setInterv = setInterval(function () {
+                $("#errormsg").attr('hidden', true);
+                $("#progressdiv").attr('hidden', false);
+                var prog_url = '/dailywork/cmitcontact_progress/';
+                $.getJSON(prog_url, function (progress_num) {
+                    $('.progress-bar').css('width', progress_num + '%');
+                    $('.progress-bar').text(progress_num + '%');
+                    if (progress_num == '99') {
+                        clearInterval(setInterv);
+                        $('.progress-bar').css('width', '100%');
+                        $('.progress-bar').text('100%');
+                        $("#progressdiv").attr('hidden', true);
+                    }
+                });
+            }, 1000);
         });
         $(function () {
 
@@ -216,6 +233,8 @@
                     offset: params.offset,  //页码
                     columnname1: $("#columnName1 option:selected").val(),
                     columnvalue1: $("#columnValue1").val(),
+                    columnname2: $("#columnName2 option:selected").val(),
+                    columnvalue2: $("#columnValue2").val()
                 };
                 return temp;
             };

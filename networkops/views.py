@@ -9,6 +9,7 @@ import json
 from networkops.utils.accesslist import *
 from networkops.utils.views_utils import *
 from EasyWork.utils.views_utils import *
+from EasyWork.utils.mail_utils import checkInputEmailAddress,checkEmail
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
 
@@ -174,8 +175,8 @@ def listpage(request, tablename):
     try:
         paginator = Paginator(dataList, limit)
     except Exception as e:
-        print('get %s data error %s' % (tablename, e))
-        return HttpResponse({'errors': 'Get %s data encounter an error' % tablename})
+        print('get {} data error {}'.format(tablename, e))
+        return HttpResponse({'errors': 'Get {} data encounter an error'.format(tablename)})
     try:
         page = int(int(offset) / int(limit) + 1)
         data = paginator.page(page)
