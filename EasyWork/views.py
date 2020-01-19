@@ -76,7 +76,7 @@ def downloadExcel(request, module, tableName):
 
 
 @login_required
-def uploadFile(request, module, tableName):
+def uploadFile(request, module, tableName, tips=''):
     '''
     处理不同类型的文件上传，1. 上传到数据库中的文件；2.上传批量查询文件
     :param request:
@@ -103,11 +103,12 @@ def uploadFile(request, module, tableName):
     elif request.method == 'GET':
         fileName = request.GET.get('filename')
         action = request.GET.get('action')
+        tips = request.GET.get('tips')
         cache.set('{}-fileName'.format(module), fileName, 2 * 60)
         cache.set('{}-action'.format(module), action, 2 * 60)
 
     return render(request, 'pages/upload_file.html',
-                  {'module': module, 'filename': fileName, 'tablename': tableName})
+                  {'module': module, 'filename': fileName, 'tablename': tableName,'tips':tips})
 
 
 @login_required
@@ -134,3 +135,6 @@ def exportBatchQueryResult(request, module, tableName):
     output = responseXls(module, tableName, data, dataName)
     response.write(output.getvalue())
     return response
+
+
+from dailywork.utils.sox_remainder import *

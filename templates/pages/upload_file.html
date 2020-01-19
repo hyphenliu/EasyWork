@@ -20,6 +20,10 @@
                         <div class="ibox-title">
                             <h5>上传区域</h5>
                                 <small>&nbsp;（请上传EXCEL文件，以“.xls”或“.xlsx”结尾）</small>
+                            {% if tips %}
+                                <div><p style="color: red"> {{ tips }}</p></div>
+
+                            {% endif %}
                         </div>
                         <div class="ibox-content">
                             <form id="my-awesome-dropzone" class="dropzone" action="/upload/{{ module }}/{{ tablename }}" method="post">

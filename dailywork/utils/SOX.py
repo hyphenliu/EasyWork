@@ -15,9 +15,9 @@ from EasyWork.utils.database_ops import *
 
 sox_list = ['stand_point', 'province_point', 'area', 'procedure', 'sub_procedure', 'control_goal',
             'standard_describe', 'company_describe', 'frequency', 'control_type', 'control_method', 'department_list',
-            'duty', 'classification', 'reference_file', 'focus_point', 'test_file']
+            'duty', 'classification', 'reference_file', 'focus_point', 'test_file', 'action']
 sox_feature = ['标准控制点编号', '控制点编号', '适用范围', '业务流程', '子流程', '控制目标', '标准控制点描述', '控制点描述', '频率', '控制类型', '控制方式',
-               '部门', '负责人', '控制点分类', '参考文件', '建议关注点', '穿行测试资料']
+               '部门', '负责人', '控制点分类', '参考文件', '建议的关注点', '穿行测试资料', '材料提供']
 
 
 def getXlsContent(tableName, filename, department='基础平台'):

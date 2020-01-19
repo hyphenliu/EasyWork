@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'dailywork',
     'networkops',
     'inventory',
+    'EasyWork',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -141,6 +142,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
+CONF_DIR = os.path.join(BASE_DIR, 'conf')
 TEST_DIRS = os.path.join(BASE_DIR, "..", "sharezone")
 TEST_DATA_DIR = os.path.join(TEST_DIRS, "data")
 SQLITE3_DIR = os.path.join(TEST_DATA_DIR, "db.sqlite3")

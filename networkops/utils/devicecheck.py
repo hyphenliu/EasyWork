@@ -6,20 +6,12 @@
 @Date  : 2019/5/7 10:29
 @Desc  :
 '''
-import time
 import ssl
 import random
 import shutil
-import os
-import smtplib
 import openpyxl
 from selenium import webdriver
 from django.conf import settings
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from email.header import Header
-from email.utils import parseaddr
 from collections import defaultdict
 from EasyWork.utils.en_decrypt import decrypt
 from EasyWork.utils.mail_utils import *
@@ -34,7 +26,7 @@ class CheckDevice:
         :return:
         '''
         param_dict = defaultdict()
-        check_config = os.path.join(settings.TEST_DIRS, 'config', 'devicecheck')
+        check_config = os.path.join(settings.CONF_DIR, 'devicecheck')
         with open(check_config, 'r') as f:
             flcontent = f.read()
             flcontent = flcontent.split('#')
@@ -43,13 +35,13 @@ class CheckDevice:
             param_dict[k] = v
         self.inspector = param_dict['inspector']
         self.checker = param_dict['checker']
-        self.recevier = formatEmailAddr(param_dict['recevier'])
-        self.cc = formatEmailAddr(param_dict['cc'])
-        self.sender = formatEmailAddr(param_dict['sender'])[0]
+        self.recevier = param_dict['recevier']
+        self.cc = param_dict['cc']
+        self.sender = param_dict['sender']
         self.mail_address = parseaddr(param_dict['sender'])[-1]
         self.smtp_server = 'smtp.chinamobile.com'
         self.password = param_dict['passwd']
-        self.bodymessage = param_dict['bodymessage']
+        self.mailsign = param_dict['mailsign']
         self.passwdFile = os.path.join(settings.TEST_DIRS, 'config', 'passwd')
         self.passwd = decrypt(param_dict['cipher'], open(self.passwdFile, 'rb').read()).split('井')
         #############################################################################
@@ -190,7 +182,7 @@ class CheckDevice:
         title = '{}{}深圳侧核心设备巡检'.format(self.dateStr2, self.hourStr)
         body = """各位好，
             {}{}深圳核心设备巡检无异常，检查人：{}、复核人：{}，详见附件{}""".format(
-            self.dateStr2, self.hourStr, self.inspector, self.checker, self.bodymessage)
+            self.dateStr2, self.hourStr, self.inspector, self.checker, self.mailsign)
         return mailSender(title=title, sender=self.sender, recevier=self.recevier, cc=self.cc, body=body,
                           sender_mail=self.mail_address, sender_pass=self.passwd, file_name=self.zip_file)
 

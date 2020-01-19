@@ -9,6 +9,7 @@
 from inventory.models import *
 from networkops.models import *
 from dailywork.models import *
+from EasyWork.models import *
 
 # 数据库表
 tableClass = {
@@ -21,6 +22,7 @@ tableClass = {
     'erp': AssetsERP, 'schedual': AssetsSchedual, 'inventoried': AssetsInventoried,
     'inventory': AssetsInventory, 'prescrap': AssetsPrescrap, 'scraped': AssetsScraped,
     ###########################################################################
+    'soxtasks': SoxTasks, 'contacttasks': ContactTasks,
 }
 # # 数据库表结构，自动获取
 # table_colums = {}
@@ -57,7 +59,7 @@ tableColums = {
     'taxi': ['date', 'time', 'price'],
     'sox': ['staff', 'stand_point', 'province_point', 'area', 'procedure', 'sub_procedure', 'control_goal',
             'company_describe', 'standard_describe', 'frequency', 'control_type', 'control_method', 'department_list',
-            'duty', 'classification', 'reference_file', 'focus_point', 'test_file', 'update'],
+            'duty', 'classification', 'reference_file', 'focus_point', 'test_file', 'action', 'update'],
     ###########################################################################
     'erp': ['asset_code', 'asset_label', 'asset_name', 'asset_type', 'type_describe', 'serial_number', 'keyword',
             'manufactor', 'model', 'number', 'unit_type', 'import_date', 'use_date', 'depreciate_date',
@@ -81,6 +83,8 @@ tableColums = {
                  'remainder_value', 'note', 'prescraped_date'],
     'scraped': ['asset_label', 'asset_name', 'model', 'manufactor', 'staff_department', 'staff_name'],
     ###########################################################################
+    'soxtasks': ['point', 'describe', 'frequency', 'test_file', 'focus', 'exec_date', 'next_exec_date', 'staff'],
+    'contacktasks': ['exec_date', 'next_exec_date'],
 }
 
 tableTitles = {
@@ -100,7 +104,7 @@ tableTitles = {
     'contact': ['公司', '部门', '姓名', '号码归属地', '邮箱', '电话', '职务', '状态', '更新日期'],
     'taxi': ['日期', '时间', '单价'],
     'sox': ['部门责任人', '标准控制点编号', '公司控制点编号', '适用范围', '业务流程', '子流程', '控制目标', '公司控制点描述', '标准控制点描述', '发生频率', '控制类型', '控制方式',
-            '具体部门', '控制点负责人', '控制点分类', '参考文件', '建议关注点', '参考的穿行测试资料', '添加时间'],
+            '具体部门', '控制点负责人', '控制点分类', '参考文件', '建议关注点', '参考的穿行测试资料', '主被动执行情况', '添加时间'],
     ###########################################################################
     'erp': ['资产编号', '资产标签号', '资产名称', '资产类别', '资产类别描述', '序列号', '资产关键字', '厂商', '规格型号', '数量', '单位', '创建日期', '启用日期',
             '按比例分摊日期', '折旧方法', '使用年限', '剩余月数', '成本', '资产净值', '资产净额', '残值', '本期折旧额', '本年折旧额', '累计折旧额', '本期减值准备',
@@ -115,6 +119,8 @@ tableTitles = {
                  '启用日期', '折旧剩余月数', '资产净额', '备注'],
     'scraped': ['资产标签号', '设备名称', '规格', '制造商', '管理部门', '责任人'],
     ###########################################################################
+    'soxtasks': ['控制点编号', '控制点描述', '控制点频率', '关注点', '测试材料', '执行日期', '下次执行日期', '负责人'],
+    'contacttasks': ['执行日期', '下次执行日期'],
 }
 
 htmlTitles = {
@@ -134,7 +140,7 @@ htmlTitles = {
     'contact': ['部门', '姓名', '号码归属地', '邮箱', '电话', '职务', '状态', '更新日期'],
     'taxi': ['日期', '时间', '单价'],
     'sox': ['部门责任人', '标准编号', '公司编号', '控制目标', '公司控制点描述', '频率', '类型', '具体部门', '负责人', '参考文件',
-            '参考穿测资料', '添加时间'],
+            '参考穿测资料', '主被动执行情况', '添加时间'],
     ###########################################################################
     'erp': ['资产标签号', '资产名称', '厂商', '规格型号', '创建日期', '启用日期', '使用年限', '剩余月数', '成本', '资产净额', '员工编号', '员工姓名', '地点',
             '期初资产标签编号',
@@ -146,6 +152,8 @@ htmlTitles = {
                  '启用日期', '折旧剩余月数', '资产净额', '备注'],
     'scraped': ['资产标签号', '设备名称', '规格', '制造商', '管理部门', '责任人'],
     ###########################################################################
+    'soxtasks': ['控制点编号', '控制点描述', '控制点频率', '关注点', '测试材料', '执行日期', '下次执行日期', '负责人'],
+    'contacttasks': ['执行日期', '下次执行日期'],
 }
 
 htmlColums = {
@@ -168,7 +176,7 @@ htmlColums = {
     'contact': ['department', 'name', 'address', 'email', 'phone', 'duty', 'status', 'update'],
     'taxi': ['date', 'time', 'price'],
     'sox': ['staff', 'stand_point', 'province_point', 'control_goal', 'company_describe', 'frequency', 'control_type',
-            'department_list', 'duty', 'reference_file', 'test_file', 'update'],
+            'department_list', 'duty', 'reference_file', 'test_file', 'action', 'update'],
     ###########################################################################
     'erp': ['asset_label', 'asset_name', 'manufactor', 'model', 'import_date', 'use_date', 'limit_year',
             'remainder_month', 'cost', 'remainder_count', 'staff_code', 'staff_name', 'address', 'early_label',
@@ -185,6 +193,8 @@ htmlColums = {
                  'remainder_value', 'note'],
     'scraped': ['asset_label', 'asset_name', 'model', 'manufactor', 'staff_department', 'staff_name'],
     ###########################################################################
+    'soxtasks': ['point', 'describe', 'frequency', 'test_file', 'focus', 'exec_date', 'next_exec_date', 'staff'],
+    'contacktasks': ['exec_date', 'next_exec_date'],
 }
 
 fileNames = {
@@ -209,4 +219,6 @@ fileNames = {
     'prescrap': '拟报废清单',
     'scraped': '已报废清单',
     ###########################################################################
+    'soxtasks': 'SOX定时任务',
+    'contacktasks': '通讯录定时任务',
 }

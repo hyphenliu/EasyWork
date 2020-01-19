@@ -42,6 +42,7 @@ class SOX(models.Model):
     reference_file = models.CharField(max_length=250, verbose_name='参考文件')
     focus_point = models.CharField(max_length=200, verbose_name='建议关注点')
     test_file = models.CharField(max_length=200, verbose_name='参考的穿行测试资料')
+    action = models.CharField(max_length=10, verbose_name='主被动执行情况', default=None)
     update = models.DateField(auto_now_add=True, verbose_name='添加时间')
 
     class Meta:

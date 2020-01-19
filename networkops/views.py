@@ -2,20 +2,24 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core.paginator import Paginator
+from django.conf import settings
 from django.core.cache import cache
 from playsound import playsound
 import json
+import re
 
 from networkops.utils.accesslist import *
 from networkops.utils.views_utils import *
 from EasyWork.utils.views_utils import *
-from EasyWork.utils.mail_utils import checkInputEmailAddress,checkEmail
+from EasyWork.utils.mail_utils import *
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
+
 
 @login_required
 def access_list(request):
     return render(request, 'pages/network_access_list.html')
+
 
 @login_required
 def access_list_product(request):
@@ -31,6 +35,7 @@ def access_list_product(request):
     else:
         pass
 
+
 @login_required
 def accesslist(request):
     access_list_title = zip(htmlTitles['accesslist'], htmlColums['accesslist'])
@@ -38,6 +43,8 @@ def accesslist(request):
     msg = cache.get('pageShowOn{}'.format('accesslist'), '')  # 获取处理结果，如错误信息，告警信息
     return render(request, 'pages/network_accesslist.html',
                   {'titles': access_list_title, 'msg': msg, 'uploadsuccess': uploadStatus})
+
+
 @login_required
 def ipmapping(request):
     ip_list_title = zip(htmlTitles['ipmapping'], htmlColums['ipmapping'])
@@ -45,7 +52,8 @@ def ipmapping(request):
     uploadStatus = cache.get('download{0}{1}file'.format('network', 'ipmapping'))
     msg = cache.get('pageShowOn{}'.format('ipmapping'), '')  # 获取处理结果，如错误信息，告警信息
     return render(request, 'pages/network_ipmapping.html',
-                  {'iptitles': ip_list_title, 'pattitles':pat_list_title ,'msg': msg, 'uploadsuccess': uploadStatus})
+                  {'iptitles': ip_list_title, 'pattitles': pat_list_title, 'msg': msg, 'uploadsuccess': uploadStatus})
+
 
 @login_required
 def ipCheck(request):
@@ -60,52 +68,26 @@ def devicecheck(request):
 
 @login_required
 def devicecheck_ajax(request):
-    errors = ''
-    inspector = request.GET.get('inspector', '').strip()
-    checker = request.GET.get('checker', '').strip()
-    sender = request.GET.get('sender', '').strip()
-    passwd = request.GET.get('mailpasswd', '').strip()
-    bodymessage = request.GET.get('bodymessage', '')
-    # recevier = request.GET.get('recevier', '').strip()
-    # cc = request.GET.get('cc', '').strip()
-    # cipher = request.GET.get('cipher', '').strip()
-    cipher = 'Pixone@NetworkOP'
-    recevier = "韩涛 <hantao@chinamobile.com>; 古小中 <guxiaozhong@chinamobile.com>; 李亮 <liliangit@chinamobile.com>; 周志平 <zhouzhiping@chinamobile.com>; 刘丹 <liudan@chinamobile.com>; 杨帆 <yangfanit01@chinamobile.com>; 吴长领 <wuchangling@chinamobile.com>; 鲁博 <luboit@chinamobile.com>; 李洋 <liyangit01@chinamobile.com>; 张强(IT) <zhangqiangit@chinamobile.com>; 李毅 <liyiit02@chinamobile.com>; 文静 <wenjingit02@chinamobile.com>; 尚娇龙 <shangjiaolong@chinamobile.com>; 刘天鹏 <liutianpeng@chinamobile.com>; 吴寒冰 <wuhanbing@chinamobile.com>; 徐金水 <xujinshui@chinamobile.com>; 李泱 <liyangit@chinamobile.com>; 张晓鸣 <zhangxiaomingit@chinamobile.com>;刘海峰<liuhaifeng@chinamobile.com>"
-    cc = "滕滨 <tengbin@chinamobile.com>; 谢文君 <xiewenjun@chinamobile.com>; 王红 <wanghongit@chinamobile.com>"
-    if not inspector:
-        errors = errors + "<p>检查人为空</p>"
-    if not checker:
-        errors = errors + "<p>复核人为空</p>"
-    if not sender:
-        errors = errors + "<p>发件人为空</p>"
-    elif 'error' in checkInputEmailAddress(sender):
-        errors = errors + "<p>发件人邮箱地址错误</p>"
-    # if not recevier:
-    #     errors = errors + "<p>收件人为空</p>"
-    # elif 'error' in checkInputEmailAddress(recevier):
-    #     errors = errors + "<p>收件人邮箱地址错误</p>"
-    # if not cc:
-    #     errors = errors + "<p>抄送人为空</p>"
-    # elif 'error' in checkInputEmailAddress(cc):
-    #     errors = errors + "<p>抄送人邮箱地址错误</p>"
-    # if not cipher:
-    #     errors = errors + "<p>Cipher为空</p>"
-    # elif 'error' in checkCipher(cipher):
-    #     errors = errors + "<p>Cipher 错误</p>"
-    if not passwd:
-        errors = errors + "<p>邮箱密码为空</p>"
-    elif '发件人' in errors:
-        pass
-    elif 'error' in checkEmail(sender, passwd):
-        errors = errors + "<p>邮箱密码错误</p>"
+    result = []
+    errors = '<div style="color:red">{}</div'
+    input = {'inspector': '检查人', 'checker': '复核人', 'sender': '发件人', 'mailpasswd': '邮箱密码', 'recevier': '收件人',
+                  'cc': '抄送人', 'cipher': 'Cipher'}
+    for k, v in input.items():
+        value = request.GET.get(k, '').strip()
+        if not value:
+            return HttpResponse(json.dumps({'errors': errors.format('<p>{}为空</p>'.format(v))}))
+        if k in ['sender','recevier','cc']:
+            input[k] = getMulContactEmailAddr(re.split('[ ,，；;]',value))
+        else:
+            input[k] = value
+        result.append('{}={}'.format(k, input[k]))
+    if 'error' in checkEmailLogin(input['sender'],input['mailpasswd']):
+        return HttpResponse(json.dumps({'errors': errors.format('<p>用户名或邮箱密码错误</p>')}))
+    if 'error' in checkCipher(input['cipher']):
+        return HttpResponse(json.dumps({'errors': errors.format('<p>Cipher密码错误</p>')}))
+    with open(os.path.join(settings.CONF_DIR, 'devicecheck'), 'w+') as f:
+        f.write('#'.join(result)+'#mailsign={}'.format(request.GET.get('mailsign', '')))
 
-    if errors:
-        errors = '<div style="color:red">%s</div' % errors
-        print(errors)
-        return HttpResponse(json.dumps({'errors': errors}))
-    with open('D:\\PycharmProjects\\sharezone\\config\\devicecheck', 'w+') as f:
-        f.write('inspector=%s#checker=%s#sender=%s#recevier=%s#cc=%s#passwd=%s#cipher=%s#bodymessage=%s' % (
-            inspector, checker, sender, recevier, cc, passwd, cipher, bodymessage))
     return HttpResponse(json.dumps({'failed': ''}))
 
 

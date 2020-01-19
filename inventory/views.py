@@ -113,7 +113,7 @@ def inventoring(request):
         assetLabel = request.GET.get('asset_label')
         address = request.GET.get('address')
         if assetLabel.strip():
-            item = getExactlySingle('erp', 'asset_label', assetLabel).values()
+            item = getSingleData('erp', 'asset_label', assetLabel, filter='iexact').values()
             if item:
                 item = item[0]
 

@@ -30,15 +30,15 @@
                     </div>
                     <div class="ibox-content">
                         <div class="form-group">
-                            <label class="control-label col-lg-3">检查人：</label>
+                            <label class="control-label col-lg-3" for="inspector">检查人：</label>
                             <div class="col-lg-9">
                                 <input class="form-control" style="height: 25px;" type="text" id="inspector"
-                                       required="required"/>
+                                       required/>
                                 <span class="help-block m-b-none" id="inspectorError" style="color:red"></span>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="control-label col-lg-3">复核人：</label>
+                            <label class="control-label col-lg-3" for="checker">复核人：</label>
                             <div class="col-lg-9">
                                 <input class="form-control" style="height: 25px;" type="text" id="checker" required/>
                                 <span class="help-block m-b-none" id="checkerError" style="color:red"></span>
@@ -46,46 +46,46 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="control-label col-lg-3">发件人(邮箱地址)：</label>
+                            <label class="control-label col-lg-3" for="sender">发件人：</label>
                             <div class="col-lg-9">
                                 <input class="form-control" style="height: 25px;" type="text" id="sender" required/>
                                 <span class="help-block m-b-none" id="senderError" style="color:red"></span>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="control-label col-lg-3">邮箱密码：</label>
+                            <label class="control-label col-lg-3" for="mailpasswd">邮箱密码：</label>
                             <div class="col-lg-9">
                                 <input class="form-control" style="height: 25px;" type="password" id="mailpasswd"
                                        required/>
                                 <span class="help-block m-b-none" id="mailpasswdError" style="color:red"></span>
                             </div>
                         </div>
-{#                        <div class="form-group">#}
-{#                            <label class="control-label col-lg-3">Cipher：</label>#}
-{#                            <div class="col-lg-9">#}
-{#                                <input class="form-control" style="height: 25px;" type="password" id="cipher" required/>#}
-{#                                <span class="help-block m-b-none" id="cipherError" style="color:red"></span>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                        <div class="form-group">#}
-{#                            <label class="control-label col-lg-3">收件人(邮箱地址英文逗号";"分开)：</label>#}
-{#                            <div class="col-lg-9">#}
-{#                                <textarea class="form-control" rows="3" id="recevier" required></textarea>#}
-{#                                <span class="help-block m-b-none" id="recevierError" style="color:red"></span>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                        <div class="form-group">#}
-{#                            <label class="control-label col-lg-3">抄送(邮箱地址英文";"分开)：</label>#}
-{#                            <div class="col-lg-9">#}
-{#                                <textarea class="form-control" rows="2" id="cc" required></textarea>#}
-{#                                <span class="help-block m-b-none" id="ccError" style="color:red"></span>#}
-{#                            </div>#}
-{#                        </div>#}
                         <div class="form-group">
-                            <label class="control-label col-lg-3">邮箱签名：</label>
+                            <label class="control-label col-lg-3" for="cipher">Cipher：</label>
                             <div class="col-lg-9">
-                                <textarea class="form-control" rows="6" id="bodymessage"></textarea>
-                                <span class="help-block m-b-none" id="bodymessageError" style="color:red"></span>
+                                <input class="form-control" style="height: 25px;" type="password" id="cipher" required/>
+                                <span class="help-block m-b-none" id="cipherError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-lg-3" for="recevier">收件人：</label>
+                            <div class="col-lg-9">
+                                <input class="form-control" id="recevier" placeholder="张三 李四" required/>
+                                <span class="help-block m-b-none" id="recevierError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-lg-3" for="cc">抄送：</label>
+                            <div class="col-lg-9">
+                                <input class="form-control" id="cc" placeholder="张三 李四" required/>
+                                <span class="help-block m-b-none" id="ccError" style="color:red"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-lg-3" for="mailsign">邮箱签名：</label>
+                            <div class="col-lg-9">
+                                <textarea class="form-control" rows="6" id="mailsign"></textarea>
+                                <span class="help-block m-b-none" id="mailsignError" style="color:red"></span>
                             </div>
                         </div>
 
@@ -125,16 +125,16 @@
             $("#checker").attr("disabled", false);
             $("#sender").attr("disabled", false);
             $("#mailpasswd").attr("disabled", false);
-            {#$("#cipher").attr("disabled", false);#}
-            {#$("#recevier").attr("disabled", false);#}
-            {#$("#cc").attr("disabled", false);#}
-            $("#bodymessage").attr("disabled", false);
-            $("#cancel").attr('disabled',true);
-            $("#submit").attr('disabled',false);
+            $("#cipher").attr("disabled", false);
+            $("#recevier").attr("disabled", false);
+            $("#cc").attr("disabled", false);
+            $("#mailsign").attr("disabled", false);
+            $("#cancel").attr('disabled', true);
+            $("#submit").attr('disabled', false);
         });
         $("#submit").click(function () {
-            $("#result").val("")
-
+            $("#result").val("");
+            $('#resultdiv').attr("hidden", true);
             $.ajax({
                 url: "/network/devicecheck_ajax",
                 type: "GET",
@@ -143,33 +143,34 @@
                     "checker": $("#checker").val(),
                     "sender": $("#sender").val(),
                     "mailpasswd": $("#mailpasswd").val(),
-                    {#"cipher": $("#cipher").val(),#}
-                    {#"recevier": $("#recevier").val(),#}
-                    {#"cc": $("#cc").val(),#}
-                    "bodymessage": $("#bodymessage").val(),
+                    "cipher": $("#cipher").val(),
+                    "recevier": $("#recevier").val(),
+                    "cc": $("#cc").val(),
+                    "mailsign": $("#mailsign").val(),
                 },
                 success: function (data) {
                     var dataObj = JSON.parse(data);
+                    $('#resultdiv').attr("hidden", false);
                     if (dataObj['errors']) {
                         $("#result").html(dataObj['errors']);
                     } else {
-                        $('#resultdiv').attr("hidden", false);
                         $('#result').html('<p>插入成功</p>');
                         $("#inspector").attr("disabled", true);
                         $("#checker").attr("disabled", true);
                         $("#sender").attr("disabled", true);
                         $("#mailpasswd").attr("disabled", true);
-                        {#$("#cipher").attr("disabled", true);#}
-                        {#$("#recevier").attr("disabled", true);#}
-                        {#$("#cc").attr("disabled", true);#}
-                        $("#bodymessage").attr("disabled", true);
-                        $("#cancel").attr('disabled',false);
-                        $("#submit").attr('disabled',true);
+                        $("#cipher").attr("disabled", true);
+                        $("#recevier").attr("disabled", true);
+                        $("#cc").attr("disabled", true);
+                        $("#mailsign").attr("disabled", true);
+                        $("#cancel").attr('disabled', false);
+                        $("#submit").attr('disabled', true);
                     }
                 },
                 error: function (data) {
+                    $('#resultdiv').attr("hidden", false);
                     var dataObj = JSON.parse(data);
-                    alert(dataObj['errors'])
+                    alert(dataObj['errors']);
                     $("#result").html(dataObj['errors'])
                 }
             })

@@ -71,7 +71,7 @@ class OA:
             print('[ERROR] 请求失败: {}'.format(self.loginUrl))
             return
 
-    def _login(self):
+    def login(self):
         '''
         登录到首页
         :return:
@@ -163,7 +163,7 @@ class OA:
          获取用户通讯录，返回列表【公司，部门，姓名，邮箱，电话，职务】
         :return:[[org, dep, name, email, phone, level],...]
         '''
-        login_result = self._login()
+        login_result = self.login()
         # 登录失败直接返回
         if not login_result['success']:
             return login_result

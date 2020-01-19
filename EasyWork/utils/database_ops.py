@@ -62,7 +62,7 @@ def importDatabase(tableName, datas, dropTable=False, dropTime=False):
         model.objects.bulk_create(dataList)
         return True
     except Exception as e:
-        print(e)
+        print('插入数据库{}出错{}'.format(tableName, e))
         return False
 
 
@@ -123,7 +123,7 @@ def updateSingle(tableName, data, column):
     '''
     单独更新，传入数据为字典格式
     :param tableName:
-    :param data:
+    :param data: 必须为字典格式
     :param column:
     :return:
     '''
@@ -136,13 +136,13 @@ def updateSingle(tableName, data, column):
     try:
         item.update(**data)
     except Exception as e:
-        print('[DB ERROR] update %s failed. %s' % (data, e))
+        print('[DB ERROR] 更新 %s 失败. %s' % (data, e))
 
 
 #################################################################################
 def getAllForColumns(tableName, columns, order_column='id'):
     '''
-    返回指定N个字段，以资产标签为key，value为指定字段
+    返回指定N个字段的查询结果，以资产标签为key，value为指定字段
     :param tableName:数据表名
     :param columns:需要的数据
     :return:{asset_label:columns}
@@ -168,16 +168,16 @@ def getAllForColumns(tableName, columns, order_column='id'):
 
 def getAll(tableName):
     '''
-    通过Django Models获取数据表中所有的数据
+    通过Django Models获取数据表中所有的数据，即返回指定数据表的所有结果
     :param tableName:
     :return:
     '''
     return tableClass[tableName].objects.all()
 
 
-def getDoubleData(tableName, columnNames, columnValues):
+def getDoubleData(tableName, columnNames, columnValues, filter='iregex'):
     '''
-    同时查询2个字段，并返回结果
+    同时查询2个字段，并返回查询结果
     :param tableName:数据表
     :param columnNames:需要查询的字段列表
     :param columnValues:需要查询的值列表
@@ -191,69 +191,70 @@ def getDoubleData(tableName, columnNames, columnValues):
         columnValues.remove(cv1)
         if tableName in ['erp', 'schedual']:
             if tableName == 'erp':
-                his_label = 'early_label__icontains'
+                his_label = 'early_label__{}'.format(filter)
             else:
-                his_label = 'note__icontains'
+                his_label = 'note__{}'.format(filter)
             resultSets = tableClass[tableName].objects.filter(
                 Q(**{asset_label: cv1}) | Q(**{his_label: cv1}),
-                Q(**{columnNames[0] + '__icontains': columnValues[0]}))
+                Q(**{columnNames[0] + '__{}'.format(filter): columnValues[0]}))
         else:
             resultSets = tableClass[tableName].objects.filter(
-                Q(**{asset_label: cv1}), Q(**{columnNames[0] + '__icontains': columnValues[0]}))
+                Q(**{asset_label: cv1}), Q(**{columnNames[0] + '__{}'.format(filter): columnValues[0]}))
     else:
-        resultSets = tableClass[tableName].objects.filter(Q(**{columnNames[0] + '__icontains': columnValues[0]}),
-                                                          Q(**{columnNames[1] + '__icontains': columnValues[1]}))
+        resultSets = tableClass[tableName].objects.filter(Q(**{columnNames[0] + '__{}'.format(filter): columnValues[0]}),
+                                                          Q(**{columnNames[1] + '__{}'.format(filter): columnValues[1]}))
     return resultSets
 
 
-def getExactlySingle(tableName, columnName, columnValue):
-    '''
-    精确查找某个字段的某个值，结果可以是多条数据
-    :param tableName: 数据库表
-    :param columnName: 字段名
-    :param columnValue: 字段值
-    :return:
-    '''
-    if tableName in ['erp', 'schedual'] and 'asset_label' == columnName:
-        if tableName == 'schedual':
-            his_label = 'note__icontains'
-        else:
-            his_label = 'early_label__icontains'
-        return tableClass[tableName].objects.filter(
-            Q(**{'asset_label__iexact': columnValue}) | Q(**{his_label: columnValue}))
-    return tableClass[tableName].objects.filter(**{columnName + '__iexact': columnValue})
-
-
-def getSingleData(tableName, columnName, columnValue):
+def getSingleData(tableName, columnName, columnValue, filter='iregex'):
     '''
     获取包含某个值的结果，返回查找结果，结果可以是多条数据
     :param tableName:数据库表
     :param columnNames:字段名
     :param columnValues:字段值
+    :param filter:icontain, iregex, contain, iexact, exact,gt, lt, startswith, endswith, isnull
     :return:
     '''
     if tableName in ['erp', 'schedual'] and 'asset_label' == columnName:
         if tableName == 'erp':
-            his_label = 'early_label__icontains'
+            his_label = 'early_label__{}'.format(filter)
         else:
-            his_label = 'note__icontains'
+            his_label = 'note__{}'.format(filter)
         resultSets = tableClass[tableName].objects.filter(
-            Q(**{'asset_label__icontains': columnValue}) | Q(**{his_label: columnValue}))
+            Q(**{'asset_label__{}'.format(filter): columnValue}) | Q(**{his_label: columnValue}))
     else:
-        resultSets = tableClass[tableName].objects.filter(**{columnName + '__icontains': columnValue})
+        resultSets = tableClass[tableName].objects.filter(**{columnName + '__{}'.format(filter): columnValue})
 
     return resultSets
 
 
-def getReSingleData(tableName, value):
+def getReSingleData(tableName, value, filter='iregex'):
     '''
+    启用正则表达式查找。
     获取包含某个值的结果，不限定字段，返回查找结果，结果可以是多条数据
     :param tableName:
     :param value:
+    :param filter:icontain, iregex, contain, iexact, exact,gt, lt, startswith, endswith, isnull
     :return:
     '''
     columns = htmlColums[tableName]
-    Q_filter = reduce(operator.or_, [Q(**{"{}__iregex".format(key): value}) for key in columns])
+    Q_filter = reduce(operator.or_, [Q(**{"{}__{}".format(key, filter): value}) for key in columns])
+    resultSets = tableClass[tableName].objects.filter(Q_filter)
+    return resultSets
+
+
+def getFilterColumns(tableName, Q_dict, filter='iregex'):
+    '''
+    查询指定列/多列的指定对应值的结果
+    :param tableName:
+    :param Q_dict:
+    :param filter:icontain, iregex, contain, iexact, exact,gt, lt, startswith, endswith, isnull
+    :return:
+    '''
+    if not isinstance(Q_dict, dict):
+        print('查询参数错误，查询参数应该为字典格式')
+        return False
+    Q_filter = reduce(operator.and_, [Q(**{"{}__{}".format(key, filter): value}) for key, value in Q_dict.items()])
     resultSets = tableClass[tableName].objects.filter(Q_filter)
     return resultSets
 
@@ -355,14 +356,14 @@ def updateInventoried():
         updateItem = {}
         if not re.search(r'^[CMSZXMLG\d-]+?', ids['asset_label']):  # 匹配具有实际资产编号的资产
             continue
-        erpLine = getExactlySingle('scraped', 'asset_label', ids['asset_label']).values()
+        erpLine = getSingleData('scraped', 'asset_label', ids['asset_label'], filter='iexact').values()
         if erpLine:
             updateItem['note'] = '应为已报废资产'
             obj = tableClass['inventory'].objects.filter(id=ids['id'])
             obj.update(**updateItem)
             continue
         try:
-            erpLine = getExactlySingle('schedual', 'asset_label', ids['asset_label']).values()[0]
+            erpLine = getSingleData('schedual', 'asset_label', ids['asset_label'], filter='iexact').values()[0]
         except:
             updateItem['note'] = '不在盘点清册中'
         else:

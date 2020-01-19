@@ -11,6 +11,7 @@ from EasyWork.utils.views_utils import *
 from EasyWork.utils.data_struct import *
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
+from dailywork.utils.SOX import sox_feature
 
 
 @login_required
@@ -52,18 +53,40 @@ def taxi_ajax(request, tablename):
         return HttpResponse(json.dumps({'success': '成功生成 {} 条数据，详见下载附件'.format(len(data_list))}))
 
 
+@login_required
 def sox(request):
     tableTitle = zip(htmlTitles['sox'], htmlColums['sox'])
+    tips = '导入的EXCEL表头需要包含至少1/4的特征值：{}'.format('、'.join(sox_feature))
     uploadStatus = cache.get('download{0}{1}file'.format('dailywork', 'sox'))
     msg = cache.get('pageShowOn{}'.format('sox'), '')  # 获取处理结果，如错误信息，告警信息
     return render(request, 'pages/dailywork_sox_list.html',
-                  {'titles': tableTitle, 'uploadsuccess': uploadStatus, 'msg': msg})
+                  {'titles': tableTitle, 'uploadsuccess': uploadStatus, 'msg': msg, 'tips': tips})
 
 
-def sox_ajax(request):
+@login_required
+def sox_config_ajax(request):
     if request.is_ajax:
-        col1 = request.GET.get('col1')
-        col2 = request.GET.get('col2')
+        user = request.GET.get('oauser')
+        passwd = request.GET.get('oapasswd')
+        oa = OA('hq.cmcc', user, passwd)
+        if not oa.paramsDict:
+            return HttpResponse(json.dumps({'error': '请在内网使用本程序！'}))
+        result = oa.login()
+        if result['error']:
+            return HttpResponse(json.dumps({'error': result['error']}))
+
+        return HttpResponse(json.dumps({'success': '配置成功！'}))
+
+
+@login_required
+def sox_config(request):
+    tableTitle = zip(htmlTitles['soxtasks'], htmlColums['soxtasks'])
+    year = '{}'.format(datetime.date.today().year)
+    month = '{:0>2}'.format(datetime.date.today().month + 1)
+    if month == '12':
+        year = '{}'.format(int(year) + 1)
+        month = '01'
+    return render(request, 'pages/dailywork_sox_task_config.html', {'titles': tableTitle, 'year': year, 'month': month})
 
 
 @login_required
@@ -88,8 +111,7 @@ def cmitcontact_ajax(request):
             return HttpResponse(json.dumps({'error': '请在内网使用本程序！'}))
         result = oa.getContactInfo(org_type=org_type, org=org)
         if result['error']:
-            print(result['error'])
-            return HttpResponse(json.dumps({'error':result['error']}))
+            return HttpResponse(json.dumps({'error': result['error']}))
         if result['insert']:
             try:
                 importDatabase(tableName='contact', datas=result['insert'], dropTable=False)
@@ -97,7 +119,7 @@ def cmitcontact_ajax(request):
                 error = '导入数据库失败'
         if result['update']:
             try:
-                updateBulk(tableName='contact', datas=result['update'], column=['department','email','phone'])
+                updateBulk(tableName='contact', datas=result['update'], column=['department', 'email', 'phone'])
             except Exception as e:
                 error = '更新数据库失败'
         ret = {'data': 'true', 'error': error}
@@ -105,7 +127,7 @@ def cmitcontact_ajax(request):
 
 
 def cmitcontact_progress(request):
-    p_num = cache.get('contactProgressNum','0')
+    p_num = cache.get('contactProgressNum', '0')
     return HttpResponse(json.dumps(p_num))
 
 
