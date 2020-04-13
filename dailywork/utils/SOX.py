@@ -85,7 +85,8 @@ def getXlsContent(tableName, filename, department='基础平台'):
     _writeContent(tableName, filename, ws_ori_result, department)
     if warning_msgs:
         print(warning_msgs)
-        warning = '<div style="background:#FF0"><p>控制点存在责任人部门信息异常：</p>{}</div>'.format(''.join(['<p>{}</p>'.format(i) for i in warning_msgs]))
+        warning = '<div style="background:#FF0"><p>控制点存在责任人部门信息异常：</p>{}</div>'.format(
+            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]))
         return ws_result, warning
     return ws_result, ''
 
@@ -164,6 +165,7 @@ def _getHeadLine(sheet_content):
     result['row_num'] = row_num
     for cell in sheet_content[row_num]:
         cv = cell.value
+        if cv == '责任人': cv = '负责人'
         if not isinstance(cv, str) or not cv:
             # print('【ERROR】解析Excel第{0}行出错，存在单元格为空'.format(row_num))
             continue
@@ -184,7 +186,7 @@ def _extractContactor(xls_data, staff_dict):
     :return: '责任人1,责任人2,...
     '''
     result = []
-    xls_data = xls_data.replace('基础平台部','').replace('基平','')
+    xls_data = xls_data.replace('基础平台部', '').replace('基平', '')
     pattern = re.compile('[^\u4e00-\u9fa5]')
     data = pattern.split(xls_data)  # 提取汉字
     index_cn = [xls_data.index(d) for d in data if d]  # 记录其他信息
@@ -193,7 +195,7 @@ def _extractContactor(xls_data, staff_dict):
     xls_data_items = [xls_data[index_cn[i]:index_cn[i + 1]] for i in range(len(index_cn) - 1)]
     for xdi in xls_data_items:
         if len(xdi) < 2: continue
-        items = pattern.split(xdi) # 提取中文，含名字
+        items = pattern.split(xdi)  # 提取中文，含名字
         if re.findall(r'\d{11}', xdi):
             phone_flag = True  # 是否包含手机号码
         else:

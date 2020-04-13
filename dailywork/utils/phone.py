@@ -146,7 +146,7 @@ class Phone(object):
         :param phone_number:
         :return:
         '''
-        if len(phone_number) < 7:
+        if len(phone_number) < 7 or len(phone_number) > 11:
             return
         if not len(phone_number) == 11:
             phone_number = phone_number + '1' * (11 - len(phone_number))

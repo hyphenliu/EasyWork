@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import platform
+import datetime
 
 if 'windows' in (platform.platform()).lower():
     op_system = 'Windows'
@@ -32,7 +33,7 @@ SECRET_KEY = '$^9p^ksz5y1erz6wcs(ugtj*03td&b1vr=#if(-6txg7vpkv(^'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.209.80', '192.168.137.43', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['192.168.209.80', '120.229.14.54', '127.0.0.1', 'localhost']
 # ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -142,6 +143,128 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
+
+'''
+# logging 用法
+import logging
+logger = logging.getLogger("console")
+def index(request):
+    logger.debug("hello")
+'''
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'standard': {
+            # 日志格式
+            # %(name)s 记录器的名称
+            # %(levelno)s 数字形式的日志记录级别
+            # %(levelname)s 日志记录级别的文本名称
+            # %(filename)s 执行日志记录调用的源文件的文件名称
+            # %(pathname)s 执行日志记录调用的源文件的路径名称
+            # %(funcName)s 执行日志记录调用的函数名称
+            # %(module)s 执行日志记录调用的模块名称
+            # %(lineno)s 执行日志记录调用的行号
+            # %(created)s 执行日志记录的时间
+            # %(asctime)s 日期和时间
+            # %(msecs)s 毫秒部分
+            # %(thread)d 线程ID
+            # %(threadName)s 线程名称
+            # %(process)d 进程ID
+            # %(message)s 记录的消息
+            'format': '[{levelname}] {asctime} [{name}:{lineno:d}] [{module}:{funcName}]  {message}',
+            'style':'{'
+        },
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '[{levelname}] {asctime} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+    },
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'include_html': True,
+        },
+        'default': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '{}/Log/QWebFX_{}.log'.format(BASE_DIR, datetime.datetime.now().date()),  # 日志输出文件
+            'maxBytes': 1024 * 1024 * 5,  # 文件大小
+            'backupCount': 5,  # 备份份数
+            'formatter': 'simple',  # 使用哪种formatters日志格式
+        },
+        'error': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '{}/Log/Error/QWebFX_Error_{}.log'.format(BASE_DIR, datetime.datetime.now().date()),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'standard',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard'
+        },
+        'request_handler': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '{}/Log/Request/QWebFX_Request_{}.log'.format(BASE_DIR, datetime.datetime.now().date()),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'standard',
+        },
+        'scripts_handler': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '{}/Log/Script/QWebFX_Script_{}.log'.format(BASE_DIR, datetime.datetime.now().date()),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'standard',
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['default'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+        'django.request': {
+            'handlers': ['request_handler'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'scripts': {
+            'handlers': ['scripts_handler'],
+            'level': 'INFO',
+            'propagate': False
+        },
+        'console': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        # API/Views 模块的日志处理
+        'views': {
+            'handlers': ['default', 'error'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'util': {
+            'handlers': ['error'],
+            'level': 'ERROR',
+            'propagate': True
+        },
+    }
+}
+
 CONF_DIR = os.path.join(BASE_DIR, 'conf')
 TEST_DIRS = os.path.join(BASE_DIR, "..", "sharezone")
 TEST_DATA_DIR = os.path.join(TEST_DIRS, "data")

@@ -336,45 +336,46 @@ def _extractProvince(cell_content, column_name):
 def _completeNumber(content):
     '''
     补充连续的数字
-    :param content:
+    :param content:需要拆分的连续数字字符串
     :return:
     '''
     result = []
-    if '-' in content:
-        start = content.split('-')[0]
-        end = content.split('-')[-1]
-    elif '~' in content:
-        start = content.split('~')[0]
-        end = content.split('~')[-1]
-    else:
+    items = re.split('[-~]', content)
+    if not items:
         return
-    for i in range(int(start), int(end) + 1):
+    for i in range(int(items[0]), int(items[-1]) + 1):
         result.append(i)
     return result
 
 
 def _completeIPAddress(content):
-    if not content:
+    '''
+    补全连续的IP地址
+    :param content:
+    :return:
+    '''
+    if not re.findall('[-~]', content.split('.')[-1]):
         return
     result = []
     items = content.split('.')
-    if not len(items) == 4:
-        return
-    if not ('-' in items[-1] or '~' in items[-1]):
-        return
     for i in _completeNumber(items[-1]):
-        items[-1] = str(i)
-        result.append('.'.join(items))
+        result.append('{}.{}'.format('.'.join(items[:3]), i))
     return result
 
 
 def _extractNumber(line):
+    '''
+    # 提取字符串中的数字和连续符号
+    :param line: 输入字符串
+    :return: 拆分后的端口号
+    '''
     error_msg = ''
     result = []
-    pattern = re.compile(r'[^\d~-]+?')
-    items = pattern.split(line)
+    # 提取端口号中的数字和连续符号
+    items = [item for item in re.split('[^\d~-]+?', line) if item]
+    if not items:
+        return result, error_msg
     for item in items:
-        if not item: continue
         if not re.match('^\d+$', item):
             ports = _completeNumber(item)
             if not ports:
@@ -684,10 +685,10 @@ def importIPMappingXls(tableName, filename):
     db_result = _dbOps(datas)
     if warning_msgs:
         message += '<div style="background:#FF0">{}</div>'.format(
-            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]).replace('\t', '&emsp;'*2).replace('\n', '</p><p>'))
+            ''.join(['<p>{}</p>'.format(i) for i in warning_msgs]).replace('\t', '&emsp;' * 2).replace('\n', '</p><p>'))
     if error_msgs:
         message += '<div style="color:#F00">{}</div>'.format(
-            ''.join(['<p>{}</p>'.format(i) for i in error_msgs]).replace('\t', 'emsp;'*2).replace('\n', '</p><p>'))
+            ''.join(['<p>{}</p>'.format(i) for i in error_msgs]).replace('\t', 'emsp;' * 2).replace('\n', '</p><p>'))
 
     return db_result, message
 

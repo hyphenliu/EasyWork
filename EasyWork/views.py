@@ -1,40 +1,17 @@
-from django.shortcuts import render, HttpResponse
+import json
+import random
+import time
+import logging
+
 from django.conf import settings
+from django.shortcuts import render, HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.views import generic
 from django.http import StreamingHttpResponse
 from django.utils.http import urlquote  # 导出中文文件名
+
 from EasyWork.utils.file_operator import *
-from apscheduler.schedulers.background import BackgroundScheduler
-from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
-import time
-from .utils import *
-from networkops.utils.feixin_extract import updateDatabase
-from networkops.utils.devicecheck import CheckDevice
 
-
-# try:
-#     print('[INFO] Excute scheduals')
-#     sched = BackgroundScheduler()
-#     sched.add_jobstore(DjangoJobStore(), 'default')
-#
-#     @register_job(sched, 'interval', seconds=10, start_date='2019-09-19 00:00:20', end_date='2019-10-10 00:00:03')
-#     def extractFeixin():
-#         updateDatabase()
-#     #
-#     #
-#     # @register_job(sched, 'interval', hours=2, start_date='2019-07-01 10:00:20', end_date='2019-07-02 00:01:00')
-#     # def sendMail():
-#     #     cd = CheckDevice()
-#     #     cd.deviceCheck()
-#     sched.add_job(updateDatabase, 'interval', id='extract feixin', seconds=10, start_date='2019-06-25 00:00:20',
-#                   misfire_grace_time=30, end_date='2019-07-03 00:00:03')
-#
-#     register_events(sched)
-#     sched.start()
-# except Exception as e:
-#     print('[ERROR] Excute schedual error. %s' % e)
-#     sched.shutdown()
+logger = logging.getLogger('views')
 
 
 @login_required
@@ -108,7 +85,7 @@ def uploadFile(request, module, tableName, tips=''):
         cache.set('{}-action'.format(module), action, 2 * 60)
 
     return render(request, 'pages/upload_file.html',
-                  {'module': module, 'filename': fileName, 'tablename': tableName,'tips':tips})
+                  {'module': module, 'filename': fileName, 'tablename': tableName, 'tips': tips})
 
 
 @login_required
@@ -124,7 +101,6 @@ def exportExcel(request, module, tableName):
     return response
 
 
-
 @login_required
 def exportBatchQueryResult(request, module, tableName):
     data = cache.get('exportQuery{}2XlsContent'.format(tableName))
@@ -137,4 +113,37 @@ def exportBatchQueryResult(request, module, tableName):
     return response
 
 
-from dailywork.utils.sox_remainder import *
+def randomPasswd(request):
+    return render(request, 'pages/tools_randompasswd.html')
+
+
+def randompasswd_ajax(request):
+    pass_list = ['1234567890', 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '!@#$%+_-=']
+    type = 0
+    pass_str = []
+
+    passwd_len = request.GET.get('passwdlen', '')
+    az = request.GET.get('az', '')
+    AZ = request.GET.get('AZ', '')
+    digit = request.GET.get('09', '')
+    complex = request.GET.get('complex', '')
+
+    get_list = [digit, az, AZ, complex]
+    for idx, gl in enumerate(get_list):
+        if gl == 'true':
+            pass_str.append(pass_list[idx])
+            type += 1
+    passwd = []
+    for i in range(int(passwd_len)):
+        for j in range(type, 0, -1):
+            if i % j == 0:
+                passwd.append(random.choice(pass_str[j - 1]))
+                break
+    random.shuffle(passwd)
+    return HttpResponse(json.dumps({'passwd': ''.join(passwd)}))
+
+# from dailywork.utils.sox_remainder import *
+# from EasyWork.utils.config import *
+# from EasyWork.utils.wx_reminder import wechatSender
+
+# wechatSender('程序提醒测试')

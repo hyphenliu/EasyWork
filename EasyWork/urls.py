@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
+from django.conf import settings
 
 from .views import *
 
@@ -31,7 +32,11 @@ urlpatterns = [
     path('exportexcel/<module>/<tableName>', exportExcel),
     path('downloadexcel/<module>/<tableName>', downloadExcel),
     path('exportquery/<module>/<tableName>', exportBatchQueryResult),
+    path('randompasswd', randomPasswd),
+    path('randompasswd_ajax', randompasswd_ajax),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS)
 urlpatterns += [path('accounts/', include('django.contrib.auth.urls')), ]
+
+import EasyWork.utils.scheduler

@@ -10,6 +10,7 @@ import smtplib
 import time
 import re
 import os
+import re
 from email.header import Header
 from email.utils import parseaddr, formataddr
 from email.mime.multipart import MIMEMultipart
@@ -19,15 +20,30 @@ from EasyWork.utils.database_ops import *
 
 
 def getContactEmailAddr(Q_dict):
+    item = getFilterColumns('contact', Q_dict).values()
+    return item[0]['email']
+
+
+def splitFormatEmailAddr(format_email_addr):
+    p = re.compile('<(.+?)>', re.I)
+    email = re.findall(p, format_email_addr)
+    if email: return email
+    return False
+
+
+def getContactFormatEmailAddr(Q_dict):
     '''
     查询用户邮箱地址
     :param Q_dict:查询参数
     :return:用户1 <email1>
     '''
 
-    item = getFilterColumns('contact',Q_dict).values()
+    item = getFilterColumns('contact', Q_dict).values()
+    if not item:
+        print(f'未找到用户信息{Q_dict}')
+        return False
     name, email = item[0]['name'], item[0]['email']
-    return '{} <{}>'.format(name, email)
+    return f'{name} <{email}>'
 
 
 def getMulContactEmailAddr(names=None, phones=None, department='基础平台部'):
@@ -38,21 +54,20 @@ def getMulContactEmailAddr(names=None, phones=None, department='基础平台部'
     :param department: 部门
     :return: 用户1 <email1>; 用户2 <email2>;
     '''
-    if phones: # 按电话号码查询
+    if phones:  # 按电话号码查询
         if isinstance(phones, list):
-            return ';'.join([getContactEmailAddr({'phone':phone}) for phone in phones])
+            return ';'.join([getContactFormatEmailAddr({'phone': phone}) for phone in phones])
         if isinstance(phones, str):
-            return getContactEmailAddr({'phone':phones})
+            return getContactFormatEmailAddr({'phone': phones})
         print('按电话号码查询时邮箱地址请输入列表或字符串')
         return False
-    if names: # 按部门和姓名查询
+    if names:  # 按部门和姓名查询
         if isinstance(names, list):
-            return ';'.join([getContactEmailAddr({'name':name, 'department':department}) for name in names])
+            return ';'.join([getContactFormatEmailAddr({'name': name, 'department': department}) for name in names])
         if isinstance(names, str):
-            return getContactEmailAddr({'name':names, 'department':department})
+            return getContactFormatEmailAddr({'name': names, 'department': department})
         print('按用户名查询邮箱地址时请输入列表或字符串')
         return False
-
 
 
 def formatEmailAddr(address, sep=';'):

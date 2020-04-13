@@ -1,0 +1,116 @@
+{% extends 'snippet/layout.html' %}
+{% load basefilter %}
+{% block title %}生成随机密码{% endblock %}
+{% block head-css %}
+    <link rel="stylesheet" href="../../static/css/bootstrap-table.css">
+{% endblock %}
+{% block wrapper-content %}
+    <div class="row wrapper border-bottom white-bg page-heading">
+        <div class="col-lg-10">
+            <h2>生成随机密码</h2>
+            <ol class="breadcrumb">
+                <li>
+                    <a href="/">首页</a>
+                </li>
+                <li>
+                    <a>其他</a>
+                </li>
+                <li class="active">
+                    <strong>随机密码生成</strong>
+                </li>
+            </ol>
+        </div>
+    </div>
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-lg-12">
+
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>随机密码生成</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <div class="form-group">
+                            <label class="control-label col-lg-3">所用字符</label>
+                            <div class="col-lg-9">
+                                <span style="display: inline-block;">
+                                    <input type="checkbox" checked="checked" name="az" id="az"/>
+                                    <label for="az">&nbsp;a-z&nbsp;&nbsp;</label>
+                                </span>
+                                <span style="display: inline-block;">
+                                    <input type="checkbox" checked="checked" name="AZ" id="AZ"/>
+                                    <label for="AZ">&nbsp;A-Z&nbsp;&nbsp;</label>
+                                </span>
+                                <span style="display: inline-block;">
+                                    <input type="checkbox" checked="checked" name="09" id="09"/>
+                                    <label for="09">&nbsp;0-9&nbsp;&nbsp;</label>
+                                </span>
+                                <span style="display: inline-block;">
+                                    <input type="checkbox" name="complex" id="complex"/>
+                                    <label for="complex">&nbsp;!@#$%</label>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-lg-3">密码长度</label>
+                            <div class="col-lg-9">
+                            <span style="display: inline-block;">
+                                <select class="selectpicker" id="passwdlen">
+                                    {% for foo in "x"|ljust:"99" %}
+                                        <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                    {% endfor %}
+                                </select>
+                            <label for="passwdlen">位</label>
+                            </span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label col-lg-3" for="result">生成结果</label>
+                            <div class="col-lg-3">
+                                <input id="result" class="form-control" type="text"/>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-lg-offset-3">
+                                <input type="button" class="btn btn-success" value="生成" id="submit"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+
+{% block tail-scripts %}
+    <script src="../../static/js/bootstrap-table.js"></script>
+    <script>
+        document.getElementById("passwdlen").value = "16";
+        $("#submit").click(function () {
+            $("#result").val("");
+            $.ajax({
+                url: "/randompasswd_ajax",
+                type: "GET",
+                data: {
+                    "az": ""+document.getElementById("az").checked+"",
+                    "AZ": ""+document.getElementById("AZ").checked+"",
+                    "09": ""+document.getElementById("09").checked+"",
+                    "complex": ""+document.getElementById("complex").checked+"",
+                    "passwdlen": $("#passwdlen").val(),
+                },
+                success: function (data) {
+                    var dataObj = JSON.parse(data);
+                    $("#result").val(dataObj['passwd']);
+                },
+                error: function (data) {
+                    var dataObj = JSON.parse(data);
+                    alert(dataObj['errors']);
+                    $("#result").html(dataObj['errors'])
+                }
+            })
+        });
+    </script>
+{% endblock %}

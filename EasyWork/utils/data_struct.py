@@ -22,7 +22,7 @@ tableClass = {
     'erp': AssetsERP, 'schedual': AssetsSchedual, 'inventoried': AssetsInventoried,
     'inventory': AssetsInventory, 'prescrap': AssetsPrescrap, 'scraped': AssetsScraped,
     ###########################################################################
-    'soxtasks': SoxTasks, 'contacttasks': ContactTasks,
+    'soxtasks': SoxTasks, 'contacttasks': ContactTasks, 'password': Password,
 }
 # # 数据库表结构，自动获取
 # table_colums = {}
@@ -85,6 +85,7 @@ tableColums = {
     ###########################################################################
     'soxtasks': ['point', 'describe', 'frequency', 'test_file', 'focus', 'exec_date', 'next_exec_date', 'staff'],
     'contacktasks': ['exec_date', 'next_exec_date'],
+    'password': ['name', 'passwd', 'note'],
 }
 
 tableTitles = {
@@ -121,6 +122,7 @@ tableTitles = {
     ###########################################################################
     'soxtasks': ['控制点编号', '控制点描述', '控制点频率', '关注点', '测试材料', '执行日期', '下次执行日期', '负责人'],
     'contacttasks': ['执行日期', '下次执行日期'],
+    'password': ['名称', '密码', '备注'],
 }
 
 htmlTitles = {
@@ -154,6 +156,7 @@ htmlTitles = {
     ###########################################################################
     'soxtasks': ['控制点编号', '控制点描述', '控制点频率', '关注点', '测试材料', '执行日期', '下次执行日期', '负责人'],
     'contacttasks': ['执行日期', '下次执行日期'],
+    'password': ['名称', '密码', '备注'],
 }
 
 htmlColums = {
@@ -195,6 +198,7 @@ htmlColums = {
     ###########################################################################
     'soxtasks': ['point', 'describe', 'frequency', 'test_file', 'focus', 'exec_date', 'next_exec_date', 'staff'],
     'contacktasks': ['exec_date', 'next_exec_date'],
+    'password': ['name', 'passwd', 'note'],
 }
 
 fileNames = {
@@ -215,10 +219,12 @@ fileNames = {
     ###########################################################################
     'erp': '资产明细',
     'schedual': '盘点清册',
-    'inventory': '盘点结果',
+    'inventory': '盘点清册',
     'prescrap': '拟报废清单',
     'scraped': '已报废清单',
+    'inventoried': '盘点结果',
     ###########################################################################
     'soxtasks': 'SOX定时任务',
     'contacktasks': '通讯录定时任务',
+    'password': '密码存储',
 }

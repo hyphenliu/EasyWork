@@ -5,7 +5,7 @@ from urllib import request, parse
 from collections import defaultdict
 from django.core.cache import cache
 from dailywork.utils.phone import Phone
-from EasyWork.utils.database_ops import getAll
+from EasyWork.utils.database_ops import *
 
 
 class OA:
@@ -112,13 +112,18 @@ class OA:
         for data in datas:
             name = data.get('cn', 'name not find').strip()
             email = data.get('email', 'email not find').strip()
-            phone = data.get('preferredMobile', 'preferredMobile not find').strip()
-            address = p.main(phone)
-            if not address:
-                address = ' '
-                print('{}的手机{}没有找到归属地'.format(name, phone))
+            phone = data.get('preferredMobile', '').strip()
+            if not phone:
+                phone = '字段为空'
+                address = '电话号码为空，无法取得地址信息'
+                print(f'{name}的手机字段不存在')
             else:
-                address = address.split('|')[1]
+                address = p.main(phone)
+                if not address:
+                    address = ' '
+                    print(f'{name}的手机{phone}没有找到归属地')
+                else:
+                    address = address.split('|')[1]
             level = data.get('level', '新员工').strip()
             result.append([org, dep, name, address, email, phone, level, '在职'])  # 按照data_struct.py中设定的顺序排列
         return result
@@ -136,15 +141,13 @@ class OA:
             display_name = data.get('displayName', 'displayName not exist').strip()
             org = data.get('o', 'o not exist').strip()
             parent_org = data.get('parentOrgId', 'parentOrgId not exist').strip()
-            o_path = parent_o + '|' + org
-            o_name_path = parent_name + '|' + display_name
+            o_path = '|'.join([parent_o, org])
+            o_name_path = '|'.join([parent_name, display_name])
             result[display_name] = {'o': org, 'parent_org': parent_org, 'level': level}
             if 'children' in data:
                 level += 1
                 result[display_name]['children'] = self._extractOID(data['children'], level, o_path, o_name_path)
                 level -= 1
-            else:
-                result[display_name]
         return result
 
     def _readResJSON(self, response):
@@ -169,10 +172,10 @@ class OA:
             return login_result
         result = []
         self.org_tree = defaultdict(list)
-        url_prefix = 'http://cloudapps.%s/ua/' % self.domain
-        contact_index_url_prefix = url_prefix + 'index%s.do%s'
-        contact_tree_api_prefix = url_prefix + 'api/%s?biz_type=%s&o=%s&_t=%s'
-        contact_info_api_prefix = url_prefix + 'api/userbyorg?biz_type=%s&o=%s&_t=%s'
+        url_prefix = 'http://cloudapps.{}/ua/'.format(self.domain)
+        contact_index_url_prefix = url_prefix + 'index{}.do{}'
+        contact_tree_api_prefix = url_prefix + 'api/{}?biz_type={}&o={}&_t={}'
+        contact_info_api_prefix = url_prefix + 'api/userbyorg?biz_type={}&o={}&_t={}'
 
         org_tree = 'orgtree'
         if org_type in ['直属单位', '专业公司', '集团总部']:
@@ -199,46 +202,74 @@ class OA:
             penix = '00000000000000000000'
         else:
             return
-        contact_index_url = contact_index_url_prefix % (index_type, penix)
-        contact_tree_api = contact_tree_api_prefix % (org_tree, biz_type, oid, self._timeStamp())
+        contact_index_url = contact_index_url_prefix.format(index_type, penix)
+        contact_tree_api = contact_tree_api_prefix.format(org_tree, biz_type, oid, self._timeStamp())
         print(contact_index_url)
         self.opener.open(request.Request(contact_index_url))  # 访问通讯录页面，不能跳过
-        time.sleep(random.randint(1, 3))  # 随机休眠2-5秒
+        time.sleep(random.randint(1, 3))  # 随机休眠1-3秒
         print(contact_tree_api)
-        response = self.opener.open(request.Request(contact_tree_api))  # 获取通讯录的组织结构树状图json信息
+        response = self.opener.open(request.Request(contact_tree_api))  # 获取通讯录的公司组织结构树状图json信息
         json_content = self._readResJSON(response)  # 读取json信息
         org_rst = self._extractOID(json_content['data']['children'])  # 获取类型下所有机构的树状json信息
-        org_dep = org_rst[org_type]['children'][org]['children']  # 获取指定公司的树状json信息
-        len_dep = len(org_dep)
-        idx = 0
-        for k, v in org_dep.items():
-            idx += 1
-            contact_info_api = contact_info_api_prefix % (biz_type, v['o'], self._timeStamp())
+        org_dep = org_rst[org_type]['children'][org]['children']  # 获取指定公司的树状json信息，这里指定信息技术中心部门
+        dep_list = self._getDepChildrenOid(org_dep)
+        for idx, oname in enumerate(dep_list):
+            contact_info_api = contact_info_api_prefix.format(biz_type, dep_list[oname], self._timeStamp())
             print(contact_info_api)
-            time.sleep(random.randint(1, 2))  # 随机休眠1-3秒
+            # time.sleep(random.randint(3, 5))  # 随机休眠1-3秒
             response = self.opener.open(request.Request(contact_info_api))  # 获取部门联系人json信息
             json_content = self._readResJSON(response)  # 读取json信息
-            result.extend(self._extractContact(json_content, org, k))
-            cache.set('{}ProgressNum'.format('contact'), '{:.1f}'.format(1.0 * 100 * idx / len_dep), 5)
+            result.extend(self._extractContact(json_content, org, oname.strip()))
+            # 更新进度条
+            cache.set('{}ProgressNum'.format('contact'), '{:.1f}'.format(1.0 * 100 * (idx + 1) / len(dep_list)), 5)
         self._logout()
 
         return {'success': result, 'error': ''}
+
+    def _getDepChildrenOid(self, dep_dict, depname=''):
+        '''
+        获取部门下设的二级部门
+        :param dep_dict:
+        :param depname:上级部门名称
+        :return:
+        '''
+        dep_name = {}
+        for k, v in dep_dict.items():
+            if depname:
+                k = '{}|{}'.format(depname, k)
+            dep_name[k] = v['o']
+            if 'children' in v:
+                dep_name.update(self._getDepChildrenOid(v['children'], k))
+        return dep_name
 
     def getContactInfo(self, org_type='直属单位', org='信息技术中心（公司）'):
         result = self._getContact_(org_type, org)
         if not result['success']: return result
         db_dict = {}
+        db_list = defaultdict(int)
         updata_item = []
         insert_item = []
+        item_type = ['organization', 'department', 'name', 'address', 'email', 'phone', 'duty', 'status']
         # ['organization', 'department', 'name', 'address', 'email', 'phone', 'duty', 'status']
         datas = result['success']
         db_data = getAll('contact').values()
-        for dd in db_data: # 考虑兼职问题，增加部门作为唯一值
-            db_dict['{}{}'.format(dd['department'], dd['email'])] = dd
+
+        for dd in db_data:  # 以邮箱和部门为唯一值
+            db_list[dd['email']] += 1
+        for dd in db_data:
+            if db_list[dd['email']] > 1 and dd['status'] == '离职':  # 删除无效数据
+                removeData('contact', {'email': dd['email'], 'status': '离职'})
+            else:
+                db_dict['{}{}'.format(dd['department'].strip(), dd['email']).strip()] = dd
         for data in datas:
-            k = '{}{}'.format(data[1], data[4])
+            print(data)
+            k = f'{data[1]}{data[4]}'
             if k in db_dict:
                 db_dict.pop(k)  # 删除已经存在的数据
+            elif data[4] in db_list and not '处长' in data[-2]:  # 更新跨部门调动的员工
+                item = getFilterColumns('contact', {'email': data[4]}, filter='iexact').values()[0]
+                db_dict.pop('{}{}'.format(item['department'], item['email']))
+                updateSingle('contact', dict(zip(item_type, data)), 'email')
             else:
                 insert_item.append(data)  # 新入职员工
         # 已离职人员，只取值value，不取键key
@@ -247,7 +278,7 @@ class OA:
             v['status'] = '离职'
             updata_item.append(v)
         error = result['error']
-
+        print(insert_item, updata_item)
         return {'insert': insert_item, 'update': updata_item, 'error': error}
 # oa = OA()
 # oa.main()

@@ -8,15 +8,17 @@
 '''
 import ssl
 import random
+import logging
 import shutil
 import openpyxl
 from selenium import webdriver
-from django.conf import settings
-from collections import defaultdict
-from EasyWork.utils.en_decrypt import decrypt
+
+from EasyWork.utils.passwd_ops import *
 from EasyWork.utils.mail_utils import *
+from EasyWork.utils.config import Config
 
 ssl._create_default_https_context = ssl._create_unverified_context
+logger = logging.getLogger('console')
 
 
 class CheckDevice:
@@ -25,39 +27,26 @@ class CheckDevice:
         初始化时间数值和其他相关参数，只能运行一次初始化一次，不然就会有问题！
         :return:
         '''
-        param_dict = defaultdict()
-        check_config = os.path.join(settings.CONF_DIR, 'devicecheck')
-        with open(check_config, 'r') as f:
-            flcontent = f.read()
-            flcontent = flcontent.split('#')
-        for fl in flcontent:
-            k, v = fl.split('=')
-            param_dict[k] = v
-        self.inspector = param_dict['inspector']
-        self.checker = param_dict['checker']
-        self.recevier = param_dict['recevier']
-        self.cc = param_dict['cc']
-        self.sender = param_dict['sender']
-        self.mail_address = parseaddr(param_dict['sender'])[-1]
-        self.smtp_server = 'smtp.chinamobile.com'
-        self.password = param_dict['passwd']
-        self.mailsign = param_dict['mailsign']
-        self.passwdFile = os.path.join(settings.TEST_DIRS, 'config', 'passwd')
-        self.passwd = decrypt(param_dict['cipher'], open(self.passwdFile, 'rb').read()).split('井')
+        self.configer = Config('devicecheck.ini')
+        self.department = self.configer.get('device_check', 'department')
+        self.inspector = self.configer.get('device_check', 'inspector')
+        self.checker = self.configer.get('device_check', 'checker')
+        self.sender = self.configer.get('device_check', 'sender')
+        self.smtp_server = self.configer.get('device_check', 'mailserver')
+        self.passwd = getPassword('device_check_mailpasswd')
+        self.mail_address = splitFormatEmailAddr(self.sender)
         #############################################################################
         ct = time.localtime(time.time())
         year, month, day, hour, minute = ct.tm_year, ct.tm_mon, ct.tm_mday, ct.tm_hour, ct.tm_min
-        if hour == 0:
-            day = day - 1
-            hour = 24
-        self.hourStr = "{:0>2d}点-{:0>2d}点".format(hour - 2, hour)  # 06:00-08:00
-        self.dateStr1 = '{:0>2d}{:0>2d}'.format(month, day)  # 0615
-        self.dateStr2 = '{}年{:0>2d}月{:0>2d}日'.format(year, month, day)  # 2019年06月15日
-        self.dateStr3 = '{:0>2d}月{:0>2d}日{}'.format(month, day, self.hourStr)  # 06月15日18:00点
+        hour, day = (24, day - 1) if hour == 0 else (hour, day)
+        self.hourStr = f"{hour - 2:0>2d}点-{hour:0>2d}点"  # 06:00-08:00
+        self.dateStr1 = f'{month:0>2d}{day:0>2d}'  # 0615
+        self.dateStr2 = f'{year}年{month:0>2d}月{day:0>2d}日'  # 2019年06月15日
+        self.dateStr3 = f'{month:0>2d}月{day:0>2d}日{self.hourStr}'  # 06月15日18:00点
         self.reportFileName = os.path.join(settings.TEST_DIRS, 'doc',
                                            '核心设备每日检查表-深圳{}({}).xlsx'.format(self.dateStr1, self.hourStr))
         self.reportTempFile = os.path.join(settings.TEST_DIRS, 'doc', '核心设备每日检查表-深圳-模版.xlsx')
-        self.zip_file = os.path.join(settings.TEST_DIRS, 'doc', '核心设备每日检查表-深圳{}.zip'.format(self.dateStr1))
+        self.zip_file = os.path.join(settings.TEST_DIRS, 'doc', f'核心设备每日检查表-深圳{self.dateStr1}.zip')
         self.zip_base_name = os.path.split(self.zip_file)[-1]
         if os.path.exists(self.zip_file):
             os.remove(self.zip_file)
@@ -72,21 +61,6 @@ class CheckDevice:
         options.add_argument('--headless')
         self.browser = webdriver.Chrome(executable_path=settings.CHROME_DRIVER, chrome_options=options)
         self.browser.implicitly_wait(20)
-        self.data = {
-            'pa': {'ip': ['192.168.99.245', '192.168.99.246'], 'keywords': 'predefined-top-attackers-table',
-                   'userid': 'user', 'user': 'admin1',
-                   'passwordid': 'passwd', 'password': self.passwd[0], 'submit': "input[type='submit'][name='ok']",
-                   'infourl': ['#dashboard::', 'php/logout.php']},
-            'f5': {'ip': ['192.168.99.71', '192.168.99.81'], 'keywords': 'Current Redundancy State',
-                   'userid': 'username', 'user': 'admin',
-                   'passwordid': 'passwd', 'password': self.passwd[1], 'submit': "button[type='submit']",
-                   'infourl': ['xui', 'dms/logout.php']},
-            'sw': {'ip': ['192.168.33.58', ], 'keywords': '网络设备及服务器', 'userid': 'ctl00_BodyContent_Username',
-                   'user': 'admin',
-                   'passwordid': 'ctl00_BodyContent_Password', 'password': self.passwd[2],
-                   'submit': "span[class='sw-btn-t']",
-                   'infourl': ['/Orion/SummaryView.aspx?viewname=Current%20Top%2010%20Lists', 'Orion/Logout.aspx']}
-        }
 
     def _check(self):
         '''
@@ -97,37 +71,53 @@ class CheckDevice:
         try:
             self._initBroswer()
         except Exception as e:
-            print('[ERROR] Init browser failed.{}'.format(e))
+            print(f'[ERROR] Init browser failed.{e}')
             self.browser.quit()
             return ['failed', 'failed']
 
-        for host, items in self.data.items():
-            for ip in items['ip']:
+        for host in ['pa', 'f5', 'sw']:
+            ips = re.split('[,，]', self.configer.get(host, 'ip'))
+            keywords = self.configer.get(host, 'keywords')
+            userid = self.configer.get(host, 'userid')
+            user = self.configer.get(host, 'user')
+            passwordid = self.configer.get(host, 'passwordid')
+            password = getPassword(f'device_check_{host}')
+            submit = self.configer.get(host, 'submit')
+            infourl = re.split('[,，]', self.configer.get(host, 'infourl'))
+            for ip in ips:
                 print('*' * 79)
-                print('[INFO] Start checking [{}] ...'.format(ip))
-                self.browser.get('https://{}'.format(ip))
+                print(f'[INFO] Start checking [{ip}] ...')
+                logger.info(f'Start checking [{ip}] ...')
+
+                self.browser.get(f'https://{ip.strip()}')
                 if self.browser.page_source == '<html><head></head><body></body></html>':
-                    print('[ERROR] Connect {} failed. Network error.'.format(ip))
-                    failedList.append('Connect {} failed'.format(ip))
+                    print(f'[ERROR] Connect {ip} failed. Network error.')
+                    logger.error(f'Connect {ip} failed. Network error.')
+                    failedList.append(f'Connect {ip} failed')
                     continue
-                self.browser.find_element_by_id(items['userid']).send_keys(items['user'])
-                self.browser.find_element_by_id(items['passwordid']).send_keys(items['password'])
-                self.browser.find_element_by_css_selector(items['submit']).click()
+                self.browser.find_element_by_id(userid).send_keys(user)
+                self.browser.find_element_by_id(passwordid).send_keys(password)
+                self.browser.find_element_by_css_selector(submit).click()
                 content = str(self.browser.page_source)
 
-                if items['keywords'] in ' '.join(content.split('\n')):
-                    print('[INFO] Login {} Success'.format(ip))
+                if keywords in ' '.join(content.split('\n')):
+                    print(f'[INFO] Login {ip} Success')
+                    logger.info(f'Login {ip} Success')
                 else:
-                    print('[ERROR] Login {} Failed'.format(ip))
-                    failedList.append(ip + ' login failed')
+                    print(f'[ERROR] Login {ip} Failed')
+                    logger.error(f'{ip} login failed')
+                    failedList.append(f'{ip} login failed')
 
-                for url in items['infourl']:
-                    print('[INFO] Visiting {}'.format(url))
+                for url in infourl:
+                    print(f'[INFO] Visiting {url}')
+                    logger.info(f'Visiting {url}')
                     int = random.randint(10, 15)
                     time.sleep(int)
-                    self.browser.get('https://{}/{}'.format(ip, url))
-                print('[INFO] Logout {} .'.format(ip))
+                    self.browser.get(f'https://{ip}/{url.strip()}')
+                print(f'[INFO] Logout {ip} .')
+                logger.info(f'Logout {ip} .')
         print('[INFO] Check complete!')
+        logger.info('Check complete!')
         self.browser.quit()
         return failedList
 
@@ -141,7 +131,7 @@ class CheckDevice:
         wb = openpyxl.load_workbook(self.reportFileName)
         ws = wb.worksheets[0]
         ws.title = self.dateStr1
-        ws["C1"] = "检查时段{}".format(self.dateStr3)
+        ws["C1"] = f"检查时段{self.dateStr3}"
         for i in range(3, 12):
             ws.cell(i, 5, self.inspector)
             ws.cell(i, 6, self.checker)
@@ -159,10 +149,11 @@ class CheckDevice:
         :return: 返回是否压缩成功
         '''
         print('[INFO] Compress cipher zip file')
+        compress_key = getPassword('device_check_compress')
         if settings.op_system == 'Windows':
-            compress_cmd = 'Bandizip.exe a -y  -p:{} {} {}'.format(self.passwd[3], self.zip_file, self.reportFileName)
+            compress_cmd = 'Bandizip.exe a -y  -p:{} {} {}'.format(compress_key, self.zip_file, self.reportFileName)
         else:
-            compress_cmd = 'zip -rP:{} {} {}'.format(self.passwd[3], self.zip_file, self.reportFileName)
+            compress_cmd = 'zip -rP:{} {} {}'.format(compress_key, self.zip_file, self.reportFileName)
         time.sleep(random.randint(10, 15))
         try:
             os.system(compress_cmd)
@@ -178,17 +169,23 @@ class CheckDevice:
         发送邮件
         :return: 返回是否发送成功
         '''
+        recevier = re.split('[,，]', self.configer.get('device_check', 'recevier'))
+        recevier = getMulContactEmailAddr(names=recevier, department=self.department)
+        cc = re.split('[,，]', self.configer.get('device_check', 'cc'))
+        cc = getMulContactEmailAddr(names=cc, department=self.department)
+        mailsign = self.configer.get('device_check', 'mailsign')
+
         print('[INFO] Prepare send email')
         title = '{}{}深圳侧核心设备巡检'.format(self.dateStr2, self.hourStr)
         body = """各位好，
             {}{}深圳核心设备巡检无异常，检查人：{}、复核人：{}，详见附件{}""".format(
-            self.dateStr2, self.hourStr, self.inspector, self.checker, self.mailsign)
-        return mailSender(title=title, sender=self.sender, recevier=self.recevier, cc=self.cc, body=body,
+            self.dateStr2, self.hourStr, self.inspector, self.checker, mailsign)
+        return mailSender(title=title, sender=self.sender, recevier=recevier, cc=cc, body=body,
                           sender_mail=self.mail_address, sender_pass=self.passwd, file_name=self.zip_file)
 
     def _program(self):
         self._initVar()
-        time.sleep(random.randint(0, 1) * 60)
+        # time.sleep(random.randint(0, 1) * 60)
         result = self._check()
         if result:  # 巡检失败
             return result
@@ -213,6 +210,3 @@ class CheckDevice:
                 time.sleep(1 * 60)
             else:
                 break
-
-# oa = CheckDevice()
-# oa.check()

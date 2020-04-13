@@ -258,7 +258,25 @@ def getFilterColumns(tableName, Q_dict, filter='iregex'):
     resultSets = tableClass[tableName].objects.filter(Q_filter)
     return resultSets
 
-
+######################################################################################
+def removeData(tableName, Q_dict, filter='iexact'):
+    '''
+    查询指定列/多列的指定对应值的结果并删除
+    :param tableName:
+    :param Q_dict:
+    :param filter: icontain, iregex, contain, iexact, exact,gt, lt, startswith, endswith, isnull
+    :return:
+    '''
+    if not isinstance(Q_dict, dict):
+        print('查询参数错误，查询参数应该为字典格式')
+        return False
+    Q_filter = reduce(operator.and_, [Q(**{"{}__{}".format(key, filter): value}) for key, value in Q_dict.items()])
+    try:
+        tableClass[tableName].objects.filter(Q_filter).delete()
+        return True
+    except Exception as e:
+        print('[ERROR] 删除数据出现问题 {}'.format(e))
+        return False
 ######################################################################################
 # inventory statistic
 def queryUninventoriedData():

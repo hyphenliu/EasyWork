@@ -119,7 +119,7 @@
                             <div class="form-group">
                                 <div class="col-md-2 col-md-offset-4">
                                     <input type="button" class="btn btn-success btn-md" value="更新公司通讯录" id="getcontact">
-
+                                    <input type="hidden" value="{{ publickey }}" id="pubkey">
                                 </div>
                                 <a href="/exportquery/dailywork/contact" id="downloadcontact" hidden>
                                     <button class="btn btn-success" type="button">
@@ -138,14 +138,20 @@
 {% endblock %}
 {% block tail-scripts %}
     <script src="../../static/js/bootstrap-table.js"></script>
+    <script src="../../static/js/jsencrypt.js"></script>
     <script>
         $("#getcontact").click(function () {
+            var jsencrypt = new JSEncrypt(); //加密对象
+            var pubkey = $('#pubkey').val(); //公钥，pkcs#1格式，字符串
+            jsencrypt.setPublicKey(pubkey); // 设置密钥
+            var oapasswd = $("#oapasswd").val();
+            var en_oapasswd = jsencrypt.encrypt(oapasswd);
             $.ajax({
                 url: "/dailywork/cmitcontact_ajax/",
                 type: "GET",
                 data: {
                     "oauser": $("#oauser").val(),
-                    "oapasswd": $("#oapasswd").val(),
+                    "oapasswd": en_oapasswd,
                     "csrfmiddlewaretoken": $('[name="csrfmiddlewaretoken"]').val()
                 },
                 success: function (data) {

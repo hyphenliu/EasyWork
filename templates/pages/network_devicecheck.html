@@ -61,13 +61,6 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="control-label col-lg-3" for="cipher">Cipher：</label>
-                            <div class="col-lg-9">
-                                <input class="form-control" style="height: 25px;" type="password" id="cipher" required/>
-                                <span class="help-block m-b-none" id="cipherError" style="color:red"></span>
-                            </div>
-                        </div>
-                        <div class="form-group">
                             <label class="control-label col-lg-3" for="recevier">收件人：</label>
                             <div class="col-lg-9">
                                 <input class="form-control" id="recevier" placeholder="张三 李四" required/>
@@ -91,6 +84,7 @@
 
                         <div class="form-group">
                             <div class="col-lg-offset-4 ">
+                                <input type="hidden" value="{{ publickey }}" id="pubkey">
                                 <input class="btn btn-info" value="添加" id="submit"/>
                                 <input class="btn btn-warning" value="取消" id="cancel" disabled/>
                             </div>
@@ -119,13 +113,13 @@
 
 {% block tail-scripts %}
     <script src="../../static/js/bootstrap-table.js"></script>
+    <script src="../../static/js/jsencrypt.js"></script>
     <script>
         $("#cancel").click(function () {
             $("#inspector").attr("disabled", false);
             $("#checker").attr("disabled", false);
             $("#sender").attr("disabled", false);
             $("#mailpasswd").attr("disabled", false);
-            $("#cipher").attr("disabled", false);
             $("#recevier").attr("disabled", false);
             $("#cc").attr("disabled", false);
             $("#mailsign").attr("disabled", false);
@@ -133,23 +127,27 @@
             $("#submit").attr('disabled', false);
         });
         $("#submit").click(function () {
+            var jsencrypt = new JSEncrypt(); //加密对象
+            var pubkey = $('#pubkey').val(); //公钥，pkcs#1格式，字符串
+            jsencrypt.setPublicKey(pubkey); // 设置密钥
+            var mailpasswd = $("#mailpasswd").val();
+            var en_mailpasswd = jsencrypt.encrypt(mailpasswd);
             $("#result").val("");
             $('#resultdiv').attr("hidden", true);
             $.ajax({
                 url: "/network/devicecheck_ajax",
                 type: "GET",
+                dataType:"json",
                 data: {
                     "inspector": $("#inspector").val(),
                     "checker": $("#checker").val(),
                     "sender": $("#sender").val(),
-                    "mailpasswd": $("#mailpasswd").val(),
-                    "cipher": $("#cipher").val(),
+                    "mailpasswd": en_mailpasswd,
                     "recevier": $("#recevier").val(),
                     "cc": $("#cc").val(),
                     "mailsign": $("#mailsign").val(),
                 },
-                success: function (data) {
-                    var dataObj = JSON.parse(data);
+                success: function (dataObj) {
                     $('#resultdiv').attr("hidden", false);
                     if (dataObj['errors']) {
                         $("#result").html(dataObj['errors']);
@@ -159,7 +157,6 @@
                         $("#checker").attr("disabled", true);
                         $("#sender").attr("disabled", true);
                         $("#mailpasswd").attr("disabled", true);
-                        $("#cipher").attr("disabled", true);
                         $("#recevier").attr("disabled", true);
                         $("#cc").attr("disabled", true);
                         $("#mailsign").attr("disabled", true);
@@ -167,9 +164,8 @@
                         $("#submit").attr('disabled', true);
                     }
                 },
-                error: function (data) {
+                error: function (dataObj) {
                     $('#resultdiv').attr("hidden", false);
-                    var dataObj = JSON.parse(data);
                     alert(dataObj['errors']);
                     $("#result").html(dataObj['errors'])
                 }

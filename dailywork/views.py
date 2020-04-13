@@ -3,15 +3,18 @@ from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 import json
+import logging
 # Create your views here.
-# from EasyWork.utils.logger import logger
 from dailywork.utils.contact_information import OA
 from dailywork.utils.views_utils import *
 from EasyWork.utils.views_utils import *
 from EasyWork.utils.data_struct import *
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
+from EasyWork.utils.passwd_ops import *
 from dailywork.utils.SOX import sox_feature
+
+logger = logging.getLogger('views')
 
 
 @login_required
@@ -91,18 +94,24 @@ def sox_config(request):
 
 @login_required
 def cmitcontact(request):
+    username = request.user.username
+    publickey = genPublickey(username)  # 生成公钥加密
     tableTitle = zip(htmlTitles['contact'], htmlColums['contact'])
     batchQueryStatus = cache.get('batchQuery{}Status'.format('contact'))
     return render(request, 'pages/dailywork_cmit_contact.html',
-                  {'titles': tableTitle, 'querysuccess': batchQueryStatus})
+                  {'titles': tableTitle, 'querysuccess': batchQueryStatus, 'publickey': publickey})
 
 
 @login_required
 def cmitcontact_ajax(request):
     if request.is_ajax():
         error = ''
-        oauser = request.GET.get('oauser')
-        oapasswd = request.GET.get('oapasswd')
+        username = request.user.username
+        oauser = request.GET.get('oauser', '')
+        oapasswd = request.GET.get('oapasswd', '')
+        if not oauser and oapasswd:
+            return HttpResponse(json.dumps({'error': '用户名、密码为空！'}))
+        oapasswd = dePrivatekey(oapasswd, username)  # 先解密得到明文
         org = request.GET.get('org', '信息技术中心（公司）')
         org_type = request.GET.get('orgtype', '直属单位')
         oaurl = 'hq.cmcc'

@@ -12,8 +12,10 @@ from networkops.utils.accesslist import *
 from networkops.utils.views_utils import *
 from EasyWork.utils.views_utils import *
 from EasyWork.utils.mail_utils import *
+from EasyWork.utils.config import Config
 from EasyWork.utils.json_datetime import DatetimeEncoder
 from EasyWork.utils.file_operator import export2Xls
+from EasyWork.utils.passwd_ops import *
 
 
 @login_required
@@ -63,30 +65,38 @@ def ipCheck(request):
 
 @login_required
 def devicecheck(request):
-    return render(request, 'pages/network_devicecheck.html')
+    username = request.user.username
+    publickey = genPublickey(username)  # 生成公钥加密
+    return render(request, 'pages/network_devicecheck.html', {'publickey': publickey})
 
 
 @login_required
 def devicecheck_ajax(request):
-    result = []
+    result = {}
     errors = '<div style="color:red">{}</div'
     input = {'inspector': '检查人', 'checker': '复核人', 'sender': '发件人', 'mailpasswd': '邮箱密码', 'recevier': '收件人',
-                  'cc': '抄送人', 'cipher': 'Cipher'}
+             'cc': '抄送人', 'mailsign': '邮箱签名'}
+    mailpasswd = ''
     for k, v in input.items():
+        username = request.user.username
         value = request.GET.get(k, '').strip()
-        if not value:
-            return HttpResponse(json.dumps({'errors': errors.format('<p>{}为空</p>'.format(v))}))
-        if k in ['sender','recevier','cc']:
-            input[k] = getMulContactEmailAddr(re.split('[ ,，；;]',value))
+        if not value and not k == 'mailsign':
+            return HttpResponse(json.dumps({'errors': errors.format(f'<p>{v}为空</p>')}))
+        if k in ['sender', 'recevier', 'cc']:# 根据用户名获取用户邮箱
+            result[k] = getMulContactEmailAddr(re.split('[ ,，；;]', value))
+        elif k == 'mailpasswd':  # 对加密后的密码解密
+            mailpasswd = dePrivatekey(value, username)
         else:
-            input[k] = value
-        result.append('{}={}'.format(k, input[k]))
-    if 'error' in checkEmailLogin(input['sender'],input['mailpasswd']):
+            result[k] = value
+    if 'error' in checkEmailLogin(result['sender'], mailpasswd):
         return HttpResponse(json.dumps({'errors': errors.format('<p>用户名或邮箱密码错误</p>')}))
-    if 'error' in checkCipher(input['cipher']):
-        return HttpResponse(json.dumps({'errors': errors.format('<p>Cipher密码错误</p>')}))
-    with open(os.path.join(settings.CONF_DIR, 'devicecheck'), 'w+') as f:
-        f.write('#'.join(result)+'#mailsign={}'.format(request.GET.get('mailsign', '')))
+    if not updatePassword(mailpasswd, 'device_check_mailpasswd', note='devicechecker mail passwd'):
+        insertPassword(mailpasswd, 'device_check_mailpasswd')
+    # 将非敏感信息写入配置文件
+    configer = Config('devicecheck.ini')
+    for k, v in result.items():
+        configer.setRaw('device_check', k, v)
+    configer.writeRaw()  # 写入配置文件
 
     return HttpResponse(json.dumps({'failed': ''}))
 

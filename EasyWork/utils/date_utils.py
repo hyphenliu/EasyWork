@@ -7,7 +7,8 @@
 @Desc  : 
 '''
 import datetime
-import os
+import re
+from EasyWork.utils.config import Config
 from django.conf import settings
 
 
@@ -30,7 +31,9 @@ def isWeekDay(year, month, day):
     :param month:
     :return:
     '''
-    holidays = open(os.path.join(settings.BASE_DIR, 'conf', 'holiday.ini'), 'r').read().split('\n')
+    configer = Config('holiday.ini')
+    holidays = re.split('[,，]', configer.get('holiday', str(year)))
+    holidays = [f'{year}-{hd}' for hd in holidays]
     date_str = '{}-{:0>2}-{:0>2}'.format(year, month, day)
 
     if date_str in holidays:
